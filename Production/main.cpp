@@ -148,7 +148,7 @@ int ConvertINTtoSTR36(int num, char *buffer) {
 
 
 // int型整数を音階に変換
-int ConvertINTtoInterval(int num, char *interval) {
+int GetInterval(int num, char *interval) {
 	if (interval == NULL) return 0;
 
 	int cnt = 0;
@@ -400,7 +400,7 @@ int main(void) {
 		int remainTime = 0;
 		int appliedEventKind = 0;
 		int barCnt = 1;
-		int timeSum = 0;
+		int timeInBar = 0;
 		bool loopFlag = true;
 		while (loopFlag) {		// 1トラック解析ループ
 
@@ -408,53 +408,50 @@ int main(void) {
 			int bufferByte = 0;
 			int eventKind = 0;
 
-			for (int i=beatMem.size()-1; i>=0; i--) {	// 1小節の長さの分解能を取得
-				if (beatMem[i].totalTime <= totalTime) {
-					BAR_RESOLUTION = RESOLUTION*4*beatMem[i].CONTENT.BEAT.numer/beatMem[i].CONTENT.BEAT.denom;
-					switch (HOLDSTDLEN_ID) {
-						case 0: HOLDSTDLEN = INT16_MAX; break;
-						case 1: HOLDSTDLEN = BAR_RESOLUTION/16; break;
-						case 2: HOLDSTDLEN = BAR_RESOLUTION/8; break;
-						case 3: HOLDSTDLEN = BAR_RESOLUTION/4; break;
-						case 4: HOLDSTDLEN = BAR_RESOLUTION/2; break;
-						case 5: HOLDSTDLEN = BAR_RESOLUTION; break;
-						case 6: HOLDSTDLEN = (int)(BAR_RESOLUTION*1.5); break;
-						case 7: HOLDSTDLEN = (int)(BAR_RESOLUTION*2.0); break;
-						case 8: HOLDSTDLEN = (int)(BAR_RESOLUTION*2.5); break;
-						case 9: HOLDSTDLEN = (int)(BAR_RESOLUTION*3.0); break;
-					}
-					break;
-				}
-			}
 
+			// デルタタイムから小節内の時間、曲の始めからの時間、小節数を求める
 			cnt = 0;
 			int t = ReadVariableLengthNumber(fpMidi, &cnt);		// デルタタイム取得
 			bufferByte+=cnt;
 
-			// tをこの小節の先頭からのデルタタイムに変換
-			if (timeSum == 0) {
-				if (remainTime > BAR_RESOLUTION) {
-					t -= BAR_RESOLUTION;
-					totalTime += BAR_RESOLUTION;
-					remainTime -= BAR_RESOLUTION;
+			while (true) {
+				for (int i=beatMem.size()-1; i>=0; i--) {	// 1小節の長さの分解能を取得
+					if (beatMem[i].totalTime <= totalTime) {
+						BAR_RESOLUTION = RESOLUTION*4*beatMem[i].CONTENT.BEAT.numer/beatMem[i].CONTENT.BEAT.denom;
+						break;
+					}
 				}
-				else {
+
+				switch (HOLDSTDLEN_ID) {
+					case 0: HOLDSTDLEN = INT16_MAX; break;
+					case 1: HOLDSTDLEN = BAR_RESOLUTION/16; break;
+					case 2: HOLDSTDLEN = BAR_RESOLUTION/8; break;
+					case 3: HOLDSTDLEN = BAR_RESOLUTION/4; break;
+					case 4: HOLDSTDLEN = BAR_RESOLUTION/2; break;
+					case 5: HOLDSTDLEN = BAR_RESOLUTION; break;
+					case 6: HOLDSTDLEN = (int)(BAR_RESOLUTION*1.5); break;
+					case 7: HOLDSTDLEN = (int)(BAR_RESOLUTION*2.0); break;
+					case 8: HOLDSTDLEN = (int)(BAR_RESOLUTION*2.5); break;
+					case 9: HOLDSTDLEN = (int)(BAR_RESOLUTION*3.0); break;
+				}
+
+
+				if (timeInBar+t >= BAR_RESOLUTION) {	// 1小節を超えたら
+					remainTime = BAR_RESOLUTION - timeInBar;
 					t -= remainTime;
 					totalTime += remainTime;
-					remainTime = 0;
+
+					barCnt++;
+					timeInBar = 0;
 				}
-			}
+				else {
+					break;
+				}
 
-			if (timeSum+t >= BAR_RESOLUTION) {	// 1小節を超えたら
-				remainTime = BAR_RESOLUTION - timeSum;
-				fseek(fpMidi, -bufferByte, SEEK_CUR);
-				barCnt++;
-				timeSum = 0;
-
-				continue;
 			}
-			timeSum += t;
+			timeInBar += t;
 			totalTime += t;
+
 
 			fread(tmp.data(), 1, 1, fpMidi);	// イベント取得
 			bufferByte++;
@@ -641,7 +638,7 @@ int main(void) {
 
 					EVENT addEvt;
 					addEvt.totalTime = totalTime;
-					addEvt.timeInBar = timeSum;
+					addEvt.timeInBar = timeInBar;
 					addEvt.bar = barCnt;
 					addEvt.eventKind = eventKind;
 					addEvt.CONTENT.NOTE.noteNum = 0;
@@ -686,7 +683,7 @@ int main(void) {
 						}
 
 						addEvt.totalTime = totalTime;
-						addEvt.timeInBar = timeSum;
+						addEvt.timeInBar = timeInBar;
 						addEvt.bar = barCnt;
 						addEvt.eventKind = 0x51;
 						musec = ConvertBYTEtoINT(buffer.data(), 0, 3);
@@ -700,7 +697,7 @@ int main(void) {
 						}
 
 						addEvt.totalTime = totalTime;
-						addEvt.timeInBar = timeSum;
+						addEvt.timeInBar = timeInBar;
 						addEvt.eventKind = 0x58;
 						addEvt.CONTENT.BEAT.numer = ConvertBYTEtoINT(buffer.data(), 0, 1);
 						addEvt.CONTENT.BEAT.denom = (int)pow(2, ConvertBYTEtoINT(buffer.data(), 1, 1));
@@ -840,7 +837,7 @@ int main(void) {
 	for (int i=0; i<laneTypeMem.size(); i++) {
 		ConvertINTtoSTR36(i, str36);
 		if (laneDivideFlag) {
-			ConvertINTtoInterval(laneTypeMem[i].interval, intvl);
+			GetInterval(laneTypeMem[i].interval, intvl);
 			fprintf(fpBms, "#LANENAME%s:TRACK %d %s  INTERVAL:%s\n", str36, laneTypeMem[i].trackNum, laneTypeMem[i].instName.c_str(), intvl);
 		}
 		else {
@@ -853,7 +850,7 @@ int main(void) {
 	printf("NOTE SOUND	%4d kind[s]\n", noteSoundMem.size());
 	for (int i=0; i<noteSoundMem.size(); i++) {
 		ConvertINTtoSTR36(i, str36);
-		ConvertINTtoInterval(noteSoundMem[i].interval, intvl);
+		GetInterval(noteSoundMem[i].interval, intvl);
 		if (noteDividFlag) {
 			fprintf(fpBms, "#WAV%s %s interval:%s velocity:%d len:%d/%d bar\n", str36, noteSoundMem[i].instName.c_str(), intvl, noteSoundMem[i].velocity, noteSoundMem[i].barLen.numer, noteSoundMem[i].barLen.denom);
 		}
