@@ -1,3 +1,5 @@
+#include "func.h"
+
 // 最大公約数を求める関数
 int CalcGCD(int a, int b) {
 	if (a == 0 || b == 0)
@@ -22,7 +24,7 @@ int CalcGCD(int a, int b) {
 
 // 可変長数値をファイルから取得
 // 戻り値は固定長数値
-int ReadVariableLengthNumber(FILE *fp, int *byteCnt=NULL) {
+int ReadVariableLengthNumber(FILE *fp, int *byteCnt) {
 	if (!fp)
 		return 0;
 
@@ -178,7 +180,7 @@ int GetInterval(int num, char *interval) {
 
 
 // 時間単位を小節を基準とした長さに変換
-LENGTH GetBarLength(long startTime, long count, long resolution, const vector<EVENT> &beat) {
+LENGTH GetBarLength(long startTime, long count, long resolution, const std::vector<EVENT> &beat) {
 	long remain = count;
 	LENGTH ans;
 	ans.denom = 0, ans.numer = 0;
@@ -206,7 +208,7 @@ LENGTH GetBarLength(long startTime, long count, long resolution, const vector<EV
 
 
 // ノート番号の検索
-int FindNoteType(const NOTETYPE &obj, const vector<NOTETYPE> &aggregate, bool divideFlag) {
+int FindNoteType(const NOTETYPE &obj, const std::vector<NOTETYPE> &aggregate, bool divideFlag) {
 	int index = -1;
 
 	if (divideFlag) {
@@ -234,7 +236,7 @@ int FindNoteType(const NOTETYPE &obj, const vector<NOTETYPE> &aggregate, bool di
 
 
 // キー音の検索
-int FindNoteSound(const NOTESOUND &obj, const vector<NOTESOUND> &aggregate, bool divideFlag) {
+int FindNoteSound(const NOTESOUND &obj, const std::vector<NOTESOUND> &aggregate, bool divideFlag) {
 	int index = -1;
 
 	if (divideFlag) {
@@ -266,7 +268,7 @@ int FindNoteSound(const NOTESOUND &obj, const vector<NOTESOUND> &aggregate, bool
 
 
 // ノートレーンの検索
-int FindLaneType(const LANETYPE &obj, const vector<LANETYPE> &aggregate, bool divideFlag) {
+int FindLaneType(const LANETYPE &obj, const std::vector<LANETYPE> &aggregate, bool divideFlag) {
 	int index = -1;
 
 	if (divideFlag) {

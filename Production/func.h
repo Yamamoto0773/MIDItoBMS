@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <vector>
 #include <stdio.h>
@@ -22,8 +22,8 @@ typedef struct _NOTETYPE {
 
 typedef struct _LANETYPE {
 	int trackNum;
-	std::string instName;	// �y��
-	int interval;		// ����
+	std::string instName;	
+	int interval;		
 } LANETYPE;
 
 
@@ -40,59 +40,56 @@ typedef struct _EVENT {
 	int timeInBar;
 	int bar;
 	int eventKind;
-	union {					// �f�[�^��e
-		struct {				// �m�[�g���
+	union {					
+		struct {			
 			int noteNum;
 			int velocity;
 			int length;
 		} NOTE;
 
-		struct {				// �e���|���
+		struct {				
 			float tempo;
 		} TEMPO;
 
-		LENGTH BEAT;			// ���q
+		LENGTH BEAT;		
 	} CONTENT;
 } EVENT;
 
 
 
-// �ő���񐔂�߂�֐�
+// 最大公約数を求める関数
 int CalcGCD(int a, int b);
 
 
-// �ϒ����l��t�@�C������擾
-// �߂�l�͌Œ蒷���l
+// 可変長数値をファイルから取得
+// 戻り値は固定長数値
 int ReadVariableLengthNumber(FILE *fp, int *byteCnt=NULL);
 
 
-// �r�b�O�G���f�B�A���`���Ŋi�[���ꂽbyte(unsigned char)�^�������int�^�ɕϊ�
+
+// ビッグエンディアン形式で格納されたbyte(unsigned char)型文字列をint型に変換
 int ConvertBYTEtoINT(unsigned char *str, int elementOffset, int elementCnt);
 
-// int�^��r�b�O�G���f�B�A���`����byte(unsigned char)�^������ɕϊ�
-// �߂�l�͕ϊ�����byte��
+// int型をビッグエンディアン形式でbyte(unsigned char)型文字列に変換
+// 戻り値は変換したbyte数
 int ConvertINTtoBYTE(int num, unsigned char *str);
 
 
-// int�^��36�i��������ɕϊ�
+// int型を36進数文字列に変換
 int ConvertINTtoSTR36(int num, char *buffer);
 
-
-// int�^������K�ɕϊ�
+// int型整数を音階に変換
 int GetInterval(int num, char *interval);
 
-
-// ���ԒP�ʂ�߂��Ƃ��������ɕϊ�
+// 時間単位を小節を基準とした長さに変換
 LENGTH GetBarLength(long startTime, long count, long resolution, const std::vector<EVENT> &beat);
 
-
-// �m�[�g�ԍ��̌���
+// ノート番号の検索
 int FindNoteType(const NOTETYPE &obj, const std::vector<NOTETYPE> &aggregate, bool divideFlag);
 
 
-// �L�[���̌���
+// キー音の検索
 int FindNoteSound(const NOTESOUND &obj, const std::vector<NOTESOUND> &aggregate, bool divideFlag);
 
-
-// �m�[�g���[���̌���
-int FindLaneType(const LANETYPE &obj, const std::vector<LANETYPE> &aggregate, bool divideFlag)
+// ノートレーンの検索
+int FindLaneType(const LANETYPE &obj, const std::vector<LANETYPE> &aggregate, bool divideFlag);

@@ -1,8 +1,11 @@
+#pragma warning( disable : 4996 )				// Œx‚ğ–³‹
+
 #include "func.h"
 
-using namespace std;
-
 int main(void) {
+	using namespace std;
+
+
 	FILE *fpMidi = NULL;
 	FILE *fpBms	= NULL;
 
