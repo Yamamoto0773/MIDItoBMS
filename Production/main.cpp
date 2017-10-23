@@ -1,242 +1,11 @@
-#include <vector>
-#include <stdio.h>
+#pragma warning( disable : 4996 )				// 警告を無視
 
-#define MAXNOTELAME (36*36-36)
-#define MAXNOTETYPE (36*36)
-#define MAXNOTESOUND (36*36)
-
-using namespace std;
-
-// 最大公約数を求める関数
-int CalcGCD(int a, int b) {
-	if (a == 0 || b == 0)
-		return 0;
-
-	if (a < b) {
-		int tmp = a;
-		a = b;
-		b = tmp;
-	}
-
-	int r = a%b;
-	while (r != 0) {
-		int tmp = b%r;
-		b = r;
-		r = tmp;
-	}
-
-	return b;
-}
-
-
-// 可変長数値をファイルから取得
-// 戻り値は固定長数値
-int ReadVariableLengthNumber(FILE *fp, int *byteCnt=NULL) {
-	if (!fp)
-		return 0;
-
-	if (byteCnt) {
-		*byteCnt = 0;
-	}
-
-	int n = 0;
-	while (true) {
-		unsigned char tmp = 0;
-		fread(&tmp, 1, 1, fp);
-		int tmp2 = (int)tmp;
-
-		if (byteCnt) {
-			(*byteCnt)++;
-		}
-
-		n <<= 7;
-		n |= (tmp2&0b01111111);
-
-		if (!(tmp2 >> 7)) {
-			// ビット7が0なら取得終了
-			break;
-		}
-	}
-
-	return n;
-}
-
-
-// ビッグエンディアン形式で格納されたbyte(unsigned char)型文字列をint型に変換
-int ConvertBYTEtoINT(unsigned char *str, int elementOffset, int elementCnt) {
-	int i, j;
-	int n = 0;
-
-	i = elementOffset;
-	while (i-elementOffset < elementCnt) {
-		int code = (int)str[i];
-
-		j = 0;
-		while (j < 2) {
-			int tmp = (code << 4*j) & 0b11110000;
-			tmp >>= 4;
-
-			if (!(0x0 <= tmp && tmp <= 0xf)) {
-				return -1;
-			}
-
-			n <<= 4;
-			n |= tmp;
-			j++;
-		}
-
-		i++;
-	}
-
-	return n;
-}
-
-
-// int型をビッグエンディアン形式でbyte(unsigned char)型文字列に変換
-// 戻り値は変換したbyte数
-int ConvertINTtoBYTE(int num, unsigned char *str) {
-	int i;
-	int tmp1, tmp2;
-
-	i = 0;
-	tmp1 = num;
-	while (true) {
-		num >>= 8;
-		tmp2 = tmp1 - (num << 8);	// 下位8ビット取り出し
-
-		str[i] &= 0x00;
-		str[i] |= tmp2;
-		i++;
-
-		if (num == 0)
-			break;
-
-		tmp1 = num;
-	}
-
-	// 文字列を反転
-	for (int k=0; k < i/2; k++) {
-		int t = str[k];
-		str[k] = str[i-k-1];
-		str[i-k-1] = t;
-	}
-	return i;
-}
-
-
-// int型を36進数文字列に変換
-int ConvertINTtoSTR36(int num, char *buffer) {
-	int cnt = 1;
-
-	while (cnt >= 0) {
-		int tmp = num%36;
-		if (tmp < 10) {
-			buffer[cnt] = (char)(tmp+'0');
-		}
-		else {
-			buffer[cnt] = (char)(tmp-10+'A');
-		}
-
-		num /= 36;
-
-		cnt--;
-	}
-	buffer[2] = '\0';
-
-	return 1;
-}
-
-
-// int型整数を音階に変換
-int ConvertINTtoInterval(int num, char *interval) {
-	if (interval == NULL) return 0;
-
-	int cnt = 0;
-	for (int i=0; i<5; i++) {
-		interval[i] = ' ';
-	}
-
-	switch (num%12) {
-		case 1: interval[1] = '#'; cnt++;
-		case 0: interval[0] = 'C'; break;
-		case 3: interval[1] = '#'; cnt++;
-		case 2: interval[0] = 'D'; break;
-		case 4: interval[0] = 'E'; break;
-		case 6: interval[1] = '#'; cnt++;
-		case 5: interval[0] = 'F'; break;
-		case 8: interval[1] = '#'; cnt++;
-		case 7: interval[0] = 'G'; break;
-		case 10: interval[1] = '#'; cnt++;
-		case 9: interval[0] = 'A'; break;
-		case 11: interval[0] = 'B'; break;
-	}
-	cnt++;
-
-	if (num < 12) {
-		interval[cnt++] = '-';
-		interval[cnt++] = '1';
-	}
-	else {
-		interval[cnt++] = '0'+ num/12-1;
-	}
-
-	interval[cnt++] = '\0';
-
-	return 1;
-}
-
-
-
-typedef struct _LENGTH {
-	int denom;
-	int numer;
-} LENGTH;
-
-
-typedef struct _NOTETYPE {
-	string instName;
-	int velocity;
-	int soundNum;
-} NOTETYPE;
-
-
-typedef struct _LANETYPE {
-	int trackNum;
-	string instName;	// 楽器
-	int interval;		// 音程
-} LANETYPE;
-
-
-typedef struct _NOTESOUND {
-	string instName;
-	int interval;
-	int velocity;
-	LENGTH barLen;
-}NOTESOUND;
-
-
-typedef struct _EVENT {
-	unsigned long totalTime;
-	int timeInBar;
-	int bar;
-	int eventKind;
-	union {					// データ内容
-		struct {				// ノート情報
-			int noteNum;
-			int velocity;
-			int length;
-		} NOTE;
-
-		struct {				// テンポ情報
-			float tempo;
-		} TEMPO;
-
-		LENGTH BEAT;			// 拍子
-	} CONTENT;
-} EVENT;
-
+#include "func.h"
 
 int main(void) {
+	using namespace std;
+
+
 	FILE *fpMidi = NULL;
 	FILE *fpBms	= NULL;
 
@@ -249,7 +18,7 @@ int main(void) {
 	int HOLDSTDLEN = 0;
 
 	bool laneDivideFlag = false;
-	bool noteDividFlag = false;
+	bool noteDivideFlag = false;
 
 	int endBar = 0;
 
@@ -259,9 +28,9 @@ int main(void) {
 	vector<vector<EVENT>> writeBuffer(MAXNOTELAME);
 	vector<NOTETYPE> noteTypeMem;
 	vector<LANETYPE> laneTypeMem;
-	vector<_NOTESOUND> noteSoundMem;
+	vector<NOTESOUND> noteSoundMem;
 	vector<unsigned char> buffer(1024);
-	vector<int>noteStartTime(MAXNOTELAME, -1);
+	vector<int> noteStartTime(MAXNOTELAME, -1);
 	vector<EVENT> tempoMem;
 	vector<EVENT> beatMem;
 	bool tempoSetFlag = false;
@@ -309,10 +78,10 @@ int main(void) {
 		printf("Divide note sound by velocity?	1:yes  0:no	>");
 		scanf("%d", &tmp);
 		if (tmp == 0) {
-			noteDividFlag = false;
+			noteDivideFlag = false;
 		}
 		else if (tmp == 1) {
-			noteDividFlag = true;
+			noteDivideFlag = true;
 		}
 		else {
 			printf("[input error] please type 0-1 in the integer.\n");
@@ -351,7 +120,7 @@ int main(void) {
 	NOTETYPE addNote ={ "", 0, 0 };
 	noteTypeMem.push_back(addNote);
 
-	
+
 	puts("------------------- LOG --------------------");
 
 	int trackCnt = 0;
@@ -394,13 +163,15 @@ int main(void) {
 		}
 
 
+
+
 		// トラックチャンクの解析
 		for (int i=0; i<writeBuffer.size(); i++) writeBuffer[i].clear();
 
 		int remainTime = 0;
 		int appliedEventKind = 0;
 		int barCnt = 1;
-		int timeSum = 0;
+		int timeInBar = 0;
 		bool loopFlag = true;
 		while (loopFlag) {		// 1トラック解析ループ
 
@@ -408,53 +179,50 @@ int main(void) {
 			int bufferByte = 0;
 			int eventKind = 0;
 
-			for (int i=beatMem.size()-1; i>=0; i--) {	// 1小節の長さの分解能を取得
-				if (beatMem[i].totalTime <= totalTime) {
-					BAR_RESOLUTION = RESOLUTION*4*beatMem[i].CONTENT.BEAT.numer/beatMem[i].CONTENT.BEAT.denom;
-					switch (HOLDSTDLEN_ID) {
-						case 0: HOLDSTDLEN = INT16_MAX; break;
-						case 1: HOLDSTDLEN = BAR_RESOLUTION/16; break;
-						case 2: HOLDSTDLEN = BAR_RESOLUTION/8; break;
-						case 3: HOLDSTDLEN = BAR_RESOLUTION/4; break;
-						case 4: HOLDSTDLEN = BAR_RESOLUTION/2; break;
-						case 5: HOLDSTDLEN = BAR_RESOLUTION; break;
-						case 6: HOLDSTDLEN = (int)(BAR_RESOLUTION*1.5); break;
-						case 7: HOLDSTDLEN = (int)(BAR_RESOLUTION*2.0); break;
-						case 8: HOLDSTDLEN = (int)(BAR_RESOLUTION*2.5); break;
-						case 9: HOLDSTDLEN = (int)(BAR_RESOLUTION*3.0); break;
-					}
-					break;
-				}
-			}
 
+			// デルタタイムから小節内の時間、曲の始めからの時間、小節数を求める
 			cnt = 0;
 			int t = ReadVariableLengthNumber(fpMidi, &cnt);		// デルタタイム取得
 			bufferByte+=cnt;
 
-			// tをこの小節の先頭からのデルタタイムに変換
-			if (timeSum == 0) {
-				if (remainTime > BAR_RESOLUTION) {
-					t -= BAR_RESOLUTION;
-					totalTime += BAR_RESOLUTION;
-					remainTime -= BAR_RESOLUTION;
+			while (true) {
+				for (int i=beatMem.size()-1; i>=0; i--) {	// 1小節の長さの分解能を取得
+					if (beatMem[i].totalTime <= totalTime) {
+						BAR_RESOLUTION = RESOLUTION*4*beatMem[i].CONTENT.BEAT.numer/beatMem[i].CONTENT.BEAT.denom;
+						break;
+					}
 				}
-				else {
+
+				switch (HOLDSTDLEN_ID) {
+					case 0: HOLDSTDLEN = INT16_MAX; break;
+					case 1: HOLDSTDLEN = BAR_RESOLUTION/16; break;
+					case 2: HOLDSTDLEN = BAR_RESOLUTION/8; break;
+					case 3: HOLDSTDLEN = BAR_RESOLUTION/4; break;
+					case 4: HOLDSTDLEN = BAR_RESOLUTION/2; break;
+					case 5: HOLDSTDLEN = BAR_RESOLUTION; break;
+					case 6: HOLDSTDLEN = (int)(BAR_RESOLUTION*1.5); break;
+					case 7: HOLDSTDLEN = (int)(BAR_RESOLUTION*2.0); break;
+					case 8: HOLDSTDLEN = (int)(BAR_RESOLUTION*2.5); break;
+					case 9: HOLDSTDLEN = (int)(BAR_RESOLUTION*3.0); break;
+				}
+
+
+				if (timeInBar+t >= BAR_RESOLUTION) {	// 1小節を超えたら
+					remainTime = BAR_RESOLUTION - timeInBar;
 					t -= remainTime;
 					totalTime += remainTime;
-					remainTime = 0;
+
+					barCnt++;
+					timeInBar = 0;
 				}
-			}
+				else {
+					break;
+				}
 
-			if (timeSum+t >= BAR_RESOLUTION) {	// 1小節を超えたら
-				remainTime = BAR_RESOLUTION - timeSum;
-				fseek(fpMidi, -bufferByte, SEEK_CUR);
-				barCnt++;
-				timeSum = 0;
-
-				continue;
 			}
-			timeSum += t;
+			timeInBar += t;
 			totalTime += t;
+
 
 			fread(tmp.data(), 1, 1, fpMidi);	// イベント取得
 			bufferByte++;
@@ -486,26 +254,11 @@ int main(void) {
 				tmp[1] = '\0';
 				int velocity = ConvertBYTEtoINT(tmp.data(), 0, 1);
 
+
 				// レーン番号の取得
 				LANETYPE addLane ={ trackCnt, trackName, noteNum };
-				int laneNum = -1;
-				for (int i=0; i<laneTypeMem.size(); i++) {
-					if (laneDivideFlag) {
-						if (laneTypeMem[i].trackNum == addLane.trackNum &&
-							laneTypeMem[i].instName == addLane.instName &&
-							laneTypeMem[i].interval == addLane.interval) {
-							laneNum = i;
-							break;
-						}
-					}
-					else {
-						if (laneTypeMem[i].trackNum == addLane.trackNum &&
-							laneTypeMem[i].instName == addLane.instName) {
-							laneNum = i;
-							break;
-						}
-					}
-				}
+				int laneNum = FindLaneType(addLane, laneTypeMem, laneDivideFlag);
+		
 				if (laneNum == -1) {
 					if (laneTypeMem.size() >= MAXNOTELAME) {
 						printf("[MIDI data error] NOTE LANE is needed more than %d kinds.   Bar Cnt:%d\n", MAXNOTELAME, barCnt);
@@ -532,58 +285,19 @@ int main(void) {
 							holdCnt++;
 						}
 
-						// 時間単位を小節を基準とした長さに変換
-						remain = length;
-						for (int i=beatMem.size()-1; i>=0; i--) {
-							if (remain == 0) break;
-
-							if (beatMem[i].totalTime < noteStartTime[laneNum] + remain) {
-								int len = (noteStartTime[laneNum]+remain) - beatMem[i].totalTime;
-								if (beatMem[i].totalTime < noteStartTime[laneNum]) {
-									len = remain;
-								}
-
-								int barRsltn = RESOLUTION*4*beatMem[i].CONTENT.BEAT.numer/beatMem[i].CONTENT.BEAT.denom;
-								int unit = CalcGCD(len, barRsltn);
-								n += len/unit;
-								d += barRsltn/unit;
-
-								remain -= len;
-							}
-						}
-
 						// キー音の追加
 						addSnd.instName = trackName;
 						addSnd.interval = noteNum;
-						addSnd.barLen.numer = n;
-						addSnd.barLen.denom = d;
-						if (noteDividFlag) {
+						addSnd.barLen	= GetBarLength(noteStartTime[laneNum], length, RESOLUTION, beatMem);
+						if (noteDivideFlag) {
 							addSnd.velocity = writeBuffer[laneNum].back().CONTENT.NOTE.velocity;
-							for (int i=0; i<noteSoundMem.size(); i++) {
-								if (noteSoundMem[i].instName == addSnd.instName &&
-									noteSoundMem[i].interval == addSnd.interval &&
-									noteSoundMem[i].velocity == addSnd.velocity &&
-									noteSoundMem[i].barLen.denom == addSnd.barLen.denom &&
-									noteSoundMem[i].barLen.numer == addSnd.barLen.numer) {
-									sndIndex = i;
-									break;
-								}
-							}
 						}
 						else {
 							addSnd.velocity = 0x7F;
-							for (int i=0; i<noteSoundMem.size(); i++) {
-								if (noteSoundMem[i].instName == addSnd.instName &&
-									noteSoundMem[i].interval == addSnd.interval &&
-									noteSoundMem[i].barLen.denom == addSnd.barLen.denom &&
-									noteSoundMem[i].barLen.numer == addSnd.barLen.numer) {
-									sndIndex = i;
-									break;
-								}
-							}
 						}
 
-						
+						sndIndex = FindNoteSound(addSnd, noteSoundMem, noteDivideFlag);
+
 						if (sndIndex == -1) {
 							if (noteSoundMem.size() >= MAXNOTESOUND-1) {
 								printf("[MIDI data error] NOTE SOUND is needed more than %d kinds.   Bar Cnt:%d\n", MAXNOTESOUND, barCnt);
@@ -593,28 +307,17 @@ int main(void) {
 							sndIndex = noteSoundMem.size()-1;
 						}
 
+
 						// ノート番号の更新
-						if (noteDividFlag) {
+						if (noteDivideFlag) {
 							addNote ={ trackName, 0x7F, sndIndex };
-							for (int i=0; i<noteTypeMem.size(); i++) {
-								if (noteTypeMem[i].instName == addNote.instName &&
-									noteTypeMem[i].soundNum == addNote.soundNum) {
-									noteIndex = i;
-									break;
-								}
-							}
 						}
 						else {
 							addNote ={ trackName, writeBuffer[laneNum].back().CONTENT.NOTE.velocity, sndIndex };
-							for (int i=0; i<noteTypeMem.size(); i++) {
-								if (noteTypeMem[i].instName == addNote.instName &&
-									noteTypeMem[i].velocity == addNote.velocity &&
-									noteTypeMem[i].soundNum == addNote.soundNum) {
-									noteIndex = i;
-									break;
-								}
-							}
 						}
+
+						noteIndex = FindNoteType(addNote, noteTypeMem, noteDivideFlag);
+
 						if (noteIndex == -1) {
 							if (noteTypeMem.size() >= MAXNOTETYPE-1) {
 								printf("[MIDI data error] NOTE TYPE is needed more than %d kinds.   Bar Cnt:%d\n", MAXNOTETYPE, barCnt);
@@ -625,6 +328,7 @@ int main(void) {
 						}
 						writeBuffer[laneNum].back().CONTENT.NOTE.length = length;
 						writeBuffer[laneNum].back().CONTENT.NOTE.noteNum = noteIndex;
+
 						break;
 					case 0x9:
 						noteStartTime[laneNum] = totalTime;
@@ -641,7 +345,7 @@ int main(void) {
 
 					EVENT addEvt;
 					addEvt.totalTime = totalTime;
-					addEvt.timeInBar = timeSum;
+					addEvt.timeInBar = timeInBar;
 					addEvt.bar = barCnt;
 					addEvt.eventKind = eventKind;
 					addEvt.CONTENT.NOTE.noteNum = 0;
@@ -686,7 +390,7 @@ int main(void) {
 						}
 
 						addEvt.totalTime = totalTime;
-						addEvt.timeInBar = timeSum;
+						addEvt.timeInBar = timeInBar;
 						addEvt.bar = barCnt;
 						addEvt.eventKind = 0x51;
 						musec = ConvertBYTEtoINT(buffer.data(), 0, 3);
@@ -700,7 +404,7 @@ int main(void) {
 						}
 
 						addEvt.totalTime = totalTime;
-						addEvt.timeInBar = timeSum;
+						addEvt.timeInBar = timeInBar;
 						addEvt.eventKind = 0x58;
 						addEvt.CONTENT.BEAT.numer = ConvertBYTEtoINT(buffer.data(), 0, 1);
 						addEvt.CONTENT.BEAT.denom = (int)pow(2, ConvertBYTEtoINT(buffer.data(), 1, 1));
@@ -840,7 +544,7 @@ int main(void) {
 	for (int i=0; i<laneTypeMem.size(); i++) {
 		ConvertINTtoSTR36(i, str36);
 		if (laneDivideFlag) {
-			ConvertINTtoInterval(laneTypeMem[i].interval, intvl);
+			GetInterval(laneTypeMem[i].interval, intvl);
 			fprintf(fpBms, "#LANENAME%s:TRACK %d %s  INTERVAL:%s\n", str36, laneTypeMem[i].trackNum, laneTypeMem[i].instName.c_str(), intvl);
 		}
 		else {
@@ -853,8 +557,8 @@ int main(void) {
 	printf("NOTE SOUND	%4d kind[s]\n", noteSoundMem.size());
 	for (int i=0; i<noteSoundMem.size(); i++) {
 		ConvertINTtoSTR36(i, str36);
-		ConvertINTtoInterval(noteSoundMem[i].interval, intvl);
-		if (noteDividFlag) {
+		GetInterval(noteSoundMem[i].interval, intvl);
+		if (noteDivideFlag) {
 			fprintf(fpBms, "#WAV%s %s interval:%s velocity:%d len:%d/%d bar\n", str36, noteSoundMem[i].instName.c_str(), intvl, noteSoundMem[i].velocity, noteSoundMem[i].barLen.numer, noteSoundMem[i].barLen.denom);
 		}
 		else {
