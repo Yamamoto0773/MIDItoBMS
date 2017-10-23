@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vector>
-#include <string>
 #include <stdio.h>
 
 #define MAXNOTELAME (36*36-36)
@@ -15,7 +14,7 @@ typedef struct _LENGTH {
 
 
 typedef struct _NOTETYPE {
-	string instName;
+	std::string instName;
 	int velocity;
 	int soundNum;
 } NOTETYPE;
@@ -23,13 +22,13 @@ typedef struct _NOTETYPE {
 
 typedef struct _LANETYPE {
 	int trackNum;
-	string instName;	// ŠyŠí
-	int interval;		// ‰¹’ö
+	std::string instName;	// ï¿½yï¿½ï¿½
+	int interval;		// ï¿½ï¿½ï¿½ï¿½
 } LANETYPE;
 
 
 typedef struct _NOTESOUND {
-	string instName;
+	std::string instName;
 	int interval;
 	int velocity;
 	LENGTH barLen;
@@ -41,59 +40,59 @@ typedef struct _EVENT {
 	int timeInBar;
 	int bar;
 	int eventKind;
-	union {					// ƒf[ƒ^“à—e
-		struct {				// ƒm[ƒgî•ñ
+	union {					// ï¿½fï¿½[ï¿½^ï¿½ï¿½e
+		struct {				// ï¿½mï¿½[ï¿½gï¿½ï¿½ï¿½
 			int noteNum;
 			int velocity;
 			int length;
 		} NOTE;
 
-		struct {				// ƒeƒ“ƒ|î•ñ
+		struct {				// ï¿½eï¿½ï¿½ï¿½|ï¿½ï¿½ï¿½
 			float tempo;
 		} TEMPO;
 
-		LENGTH BEAT;			// ”q
+		LENGTH BEAT;			// ï¿½ï¿½ï¿½q
 	} CONTENT;
 } EVENT;
 
 
 
-// Å‘åŒö–ñ”‚ğ‹‚ß‚éŠÖ”
+// ï¿½Å‘ï¿½ï¿½ï¿½ñ”‚ï¿½ß‚ï¿½Öï¿½
 int CalcGCD(int a, int b);
 
 
-// ‰Â•Ï’·”’l‚ğƒtƒ@ƒCƒ‹‚©‚çæ“¾
-// –ß‚è’l‚ÍŒÅ’è’·”’l
+// ï¿½Â•Ï’ï¿½ï¿½ï¿½ï¿½lï¿½ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ“¾
+// ï¿½ß‚ï¿½lï¿½ÍŒÅ’è’·ï¿½ï¿½ï¿½l
 int ReadVariableLengthNumber(FILE *fp, int *byteCnt=NULL);
 
 
-// ƒrƒbƒOƒGƒ“ƒfƒBƒAƒ“Œ`®‚ÅŠi”[‚³‚ê‚½byte(unsigned char)Œ^•¶š—ñ‚ğintŒ^‚É•ÏŠ·
+// ï¿½rï¿½bï¿½Oï¿½Gï¿½ï¿½ï¿½fï¿½Bï¿½Aï¿½ï¿½ï¿½`ï¿½ï¿½ï¿½ÅŠiï¿½[ï¿½ï¿½ï¿½ê‚½byte(unsigned char)ï¿½^ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½intï¿½^ï¿½É•ÏŠï¿½
 int ConvertBYTEtoINT(unsigned char *str, int elementOffset, int elementCnt);
 
-// intŒ^‚ğƒrƒbƒOƒGƒ“ƒfƒBƒAƒ“Œ`®‚Åbyte(unsigned char)Œ^•¶š—ñ‚É•ÏŠ·
-// –ß‚è’l‚Í•ÏŠ·‚µ‚½byte”
+// intï¿½^ï¿½ï¿½rï¿½bï¿½Oï¿½Gï¿½ï¿½ï¿½fï¿½Bï¿½Aï¿½ï¿½ï¿½`ï¿½ï¿½ï¿½ï¿½byte(unsigned char)ï¿½^ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É•ÏŠï¿½
+// ï¿½ß‚ï¿½lï¿½Í•ÏŠï¿½ï¿½ï¿½ï¿½ï¿½byteï¿½ï¿½
 int ConvertINTtoBYTE(int num, unsigned char *str);
 
 
-// intŒ^‚ğ36i”•¶š—ñ‚É•ÏŠ·
+// intï¿½^ï¿½ï¿½36ï¿½iï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É•ÏŠï¿½
 int ConvertINTtoSTR36(int num, char *buffer);
 
 
-// intŒ^®”‚ğ‰¹ŠK‚É•ÏŠ·
+// intï¿½^ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Kï¿½É•ÏŠï¿½
 int GetInterval(int num, char *interval);
 
 
-// ŠÔ’PˆÊ‚ğ¬ß‚ğŠî€‚Æ‚µ‚½’·‚³‚É•ÏŠ·
-LENGTH GetBarLength(long startTime, long count, long resolution, const vector<EVENT> &beat);
+// ï¿½ï¿½ï¿½Ô’Pï¿½Ê‚ï¿½ß‚ï¿½î€ï¿½Æ‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É•ÏŠï¿½
+LENGTH GetBarLength(long startTime, long count, long resolution, const std::vector<EVENT> &beat);
 
 
-// ƒm[ƒg”Ô†‚ÌŒŸõ
-int FindNoteType(const NOTETYPE &obj, const vector<NOTETYPE> &aggregate, bool divideFlag);
+// ï¿½mï¿½[ï¿½gï¿½Ôï¿½ï¿½ÌŒï¿½ï¿½ï¿½
+int FindNoteType(const NOTETYPE &obj, const std::vector<NOTETYPE> &aggregate, bool divideFlag);
 
 
-// ƒL[‰¹‚ÌŒŸõ
-int FindNoteSound(const NOTESOUND &obj, const vector<NOTESOUND> &aggregate, bool divideFlag);
+// ï¿½Lï¿½[ï¿½ï¿½ï¿½ÌŒï¿½ï¿½ï¿½
+int FindNoteSound(const NOTESOUND &obj, const std::vector<NOTESOUND> &aggregate, bool divideFlag);
 
 
-// ƒm[ƒgƒŒ[ƒ“‚ÌŒŸõ
-int FindLaneType(const LANETYPE &obj, const vector<LANETYPE> &aggregate, bool divideFlag)
+// ï¿½mï¿½[ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ÌŒï¿½ï¿½ï¿½
+int FindLaneType(const LANETYPE &obj, const std::vector<LANETYPE> &aggregate, bool divideFlag)
