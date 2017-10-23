@@ -7,6 +7,56 @@
 
 using namespace std;
 
+
+typedef struct _LENGTH {
+	int denom;
+	int numer;
+} LENGTH;
+
+
+typedef struct _NOTETYPE {
+	string instName;
+	int velocity;
+	int soundNum;
+} NOTETYPE;
+
+
+typedef struct _LANETYPE {
+	int trackNum;
+	string instName;	// 楽器
+	int interval;		// 音程
+} LANETYPE;
+
+
+typedef struct _NOTESOUND {
+	string instName;
+	int interval;
+	int velocity;
+	LENGTH barLen;
+}NOTESOUND;
+
+
+typedef struct _EVENT {
+	unsigned long totalTime;
+	int timeInBar;
+	int bar;
+	int eventKind;
+	union {					// データ内容
+		struct {				// ノート情報
+			int noteNum;
+			int velocity;
+			int length;
+		} NOTE;
+
+		struct {				// テンポ情報
+			float tempo;
+		} TEMPO;
+
+		LENGTH BEAT;			// 拍子
+	} CONTENT;
+} EVENT;
+
+
 // 最大公約数を求める関数
 int CalcGCD(int a, int b) {
 	if (a == 0 || b == 0)
@@ -186,54 +236,124 @@ int GetInterval(int num, char *interval) {
 }
 
 
+// 時間単位を小節を基準とした長さに変換
+LENGTH GetBarLength(long startTime, long count, long resolution, const vector<EVENT> &beat) {
+	long remain = count;
+	LENGTH ans;
+	ans.denom = 0, ans.numer = 0;
 
-typedef struct _LENGTH {
-	int denom;
-	int numer;
-} LENGTH;
+	for (int i=beat.size()-1; i>=0; i--) {
+		if (remain == 0) break;
+
+		if (beat[i].totalTime < startTime + remain) {
+			int len = (startTime+remain) - beat[i].totalTime;
+			if (beat[i].totalTime < startTime) {
+				len = remain;
+			}
+
+			int barRsltn = resolution*4*beat[i].CONTENT.BEAT.numer/beat[i].CONTENT.BEAT.denom;
+			int unit = CalcGCD(len, barRsltn);
+			ans.numer += len/unit;
+			ans.denom += barRsltn/unit;
+
+			remain -= len;
+		}
+	}
+
+	return ans;
+}
 
 
-typedef struct _NOTETYPE {
-	string instName;
-	int velocity;
-	int soundNum;
-} NOTETYPE;
+// ノート番号の検索
+int FindNoteType(const NOTETYPE &obj, const vector<NOTETYPE> &aggregate, bool divideFlag) {
+	int index = -1;
+
+	if (divideFlag) {
+		for (int i=0; i<aggregate.size(); i++) {
+			if (aggregate[i].instName == obj.instName &&
+				aggregate[i].soundNum == obj.soundNum) {
+				index = i;
+				break;
+			}
+		}
+	}
+	else {
+		for (int i=0; i<aggregate.size(); i++) {
+			if (aggregate[i].instName == obj.instName &&
+				aggregate[i].velocity == obj.velocity &&
+				aggregate[i].soundNum == obj.soundNum) {
+				index = i;
+				break;
+			}
+		}
+	}
+
+	return index;
+}
 
 
-typedef struct _LANETYPE {
-	int trackNum;
-	string instName;	// 楽器
-	int interval;		// 音程
-} LANETYPE;
+// キー音の検索
+int FindNoteSound(const NOTESOUND &obj, const vector<NOTESOUND> &aggregate, bool divideFlag) {
+	int index = -1;
+
+	if (divideFlag) {
+		for (int i=0; i<aggregate.size(); i++) {
+			if (aggregate[i].instName == obj.instName &&
+				aggregate[i].interval == obj.interval &&
+				aggregate[i].velocity == obj.velocity &&
+				aggregate[i].barLen.denom == obj.barLen.denom &&
+				aggregate[i].barLen.numer == obj.barLen.numer) {
+				index = i;
+				break;
+			}
+		}
+	}
+	else {
+		for (int i=0; i<aggregate.size(); i++) {
+			if (aggregate[i].instName == obj.instName &&
+				aggregate[i].interval == obj.interval &&
+				aggregate[i].barLen.denom == obj.barLen.denom &&
+				aggregate[i].barLen.numer == obj.barLen.numer) {
+				index = i;
+				break;
+			}
+		}
+	}
+
+	return index;
+}
 
 
-typedef struct _NOTESOUND {
-	string instName;
-	int interval;
-	int velocity;
-	LENGTH barLen;
-}NOTESOUND;
 
+int FindLaneType(const LANETYPE &obj, const vector<LANETYPE> &aggregate, bool divideFlag) {
+	int index = -1;
 
-typedef struct _EVENT {
-	unsigned long totalTime;
-	int timeInBar;
-	int bar;
-	int eventKind;
-	union {					// データ内容
-		struct {				// ノート情報
-			int noteNum;
-			int velocity;
-			int length;
-		} NOTE;
+	if (divideFlag) {
+		for (int i=0; i<aggregate.size(); i++) {
+			if (aggregate[i].trackNum == obj.trackNum &&
+				aggregate[i].instName == obj.instName &&
+				aggregate[i].interval == obj.interval) {
+				index = i;
+				break;
+			}
 
-		struct {				// テンポ情報
-			float tempo;
-		} TEMPO;
+		}
+	}
+	else {
+		for (int i=0; i<aggregate.size(); i++) {
 
-		LENGTH BEAT;			// 拍子
-	} CONTENT;
-} EVENT;
+			if (aggregate[i].trackNum == obj.trackNum &&
+				aggregate[i].instName == obj.instName) {
+				index = i;
+				break;
+			}
+
+		}
+	}
+
+	return index;
+}
+
 
 
 int main(void) {
@@ -249,7 +369,7 @@ int main(void) {
 	int HOLDSTDLEN = 0;
 
 	bool laneDivideFlag = false;
-	bool noteDividFlag = false;
+	bool noteDivideFlag = false;
 
 	int endBar = 0;
 
@@ -259,9 +379,9 @@ int main(void) {
 	vector<vector<EVENT>> writeBuffer(MAXNOTELAME);
 	vector<NOTETYPE> noteTypeMem;
 	vector<LANETYPE> laneTypeMem;
-	vector<_NOTESOUND> noteSoundMem;
+	vector<NOTESOUND> noteSoundMem;
 	vector<unsigned char> buffer(1024);
-	vector<int>noteStartTime(MAXNOTELAME, -1);
+	vector<int> noteStartTime(MAXNOTELAME, -1);
 	vector<EVENT> tempoMem;
 	vector<EVENT> beatMem;
 	bool tempoSetFlag = false;
@@ -309,10 +429,10 @@ int main(void) {
 		printf("Divide note sound by velocity?	1:yes  0:no	>");
 		scanf("%d", &tmp);
 		if (tmp == 0) {
-			noteDividFlag = false;
+			noteDivideFlag = false;
 		}
 		else if (tmp == 1) {
-			noteDividFlag = true;
+			noteDivideFlag = true;
 		}
 		else {
 			printf("[input error] please type 0-1 in the integer.\n");
@@ -351,7 +471,7 @@ int main(void) {
 	NOTETYPE addNote ={ "", 0, 0 };
 	noteTypeMem.push_back(addNote);
 
-	
+
 	puts("------------------- LOG --------------------");
 
 	int trackCnt = 0;
@@ -392,6 +512,8 @@ int main(void) {
 
 			continue;
 		}
+
+
 
 
 		// トラックチャンクの解析
@@ -483,26 +605,11 @@ int main(void) {
 				tmp[1] = '\0';
 				int velocity = ConvertBYTEtoINT(tmp.data(), 0, 1);
 
+
 				// レーン番号の取得
 				LANETYPE addLane ={ trackCnt, trackName, noteNum };
-				int laneNum = -1;
-				for (int i=0; i<laneTypeMem.size(); i++) {
-					if (laneDivideFlag) {
-						if (laneTypeMem[i].trackNum == addLane.trackNum &&
-							laneTypeMem[i].instName == addLane.instName &&
-							laneTypeMem[i].interval == addLane.interval) {
-							laneNum = i;
-							break;
-						}
-					}
-					else {
-						if (laneTypeMem[i].trackNum == addLane.trackNum &&
-							laneTypeMem[i].instName == addLane.instName) {
-							laneNum = i;
-							break;
-						}
-					}
-				}
+				int laneNum = FindLaneType(addLane, laneTypeMem, laneDivideFlag);
+		
 				if (laneNum == -1) {
 					if (laneTypeMem.size() >= MAXNOTELAME) {
 						printf("[MIDI data error] NOTE LANE is needed more than %d kinds.   Bar Cnt:%d\n", MAXNOTELAME, barCnt);
@@ -529,58 +636,19 @@ int main(void) {
 							holdCnt++;
 						}
 
-						// 時間単位を小節を基準とした長さに変換
-						remain = length;
-						for (int i=beatMem.size()-1; i>=0; i--) {
-							if (remain == 0) break;
-
-							if (beatMem[i].totalTime < noteStartTime[laneNum] + remain) {
-								int len = (noteStartTime[laneNum]+remain) - beatMem[i].totalTime;
-								if (beatMem[i].totalTime < noteStartTime[laneNum]) {
-									len = remain;
-								}
-
-								int barRsltn = RESOLUTION*4*beatMem[i].CONTENT.BEAT.numer/beatMem[i].CONTENT.BEAT.denom;
-								int unit = CalcGCD(len, barRsltn);
-								n += len/unit;
-								d += barRsltn/unit;
-
-								remain -= len;
-							}
-						}
-
 						// キー音の追加
 						addSnd.instName = trackName;
 						addSnd.interval = noteNum;
-						addSnd.barLen.numer = n;
-						addSnd.barLen.denom = d;
-						if (noteDividFlag) {
+						addSnd.barLen	= GetBarLength(noteStartTime[laneNum], length, RESOLUTION, beatMem);
+						if (noteDivideFlag) {
 							addSnd.velocity = writeBuffer[laneNum].back().CONTENT.NOTE.velocity;
-							for (int i=0; i<noteSoundMem.size(); i++) {
-								if (noteSoundMem[i].instName == addSnd.instName &&
-									noteSoundMem[i].interval == addSnd.interval &&
-									noteSoundMem[i].velocity == addSnd.velocity &&
-									noteSoundMem[i].barLen.denom == addSnd.barLen.denom &&
-									noteSoundMem[i].barLen.numer == addSnd.barLen.numer) {
-									sndIndex = i;
-									break;
-								}
-							}
 						}
 						else {
 							addSnd.velocity = 0x7F;
-							for (int i=0; i<noteSoundMem.size(); i++) {
-								if (noteSoundMem[i].instName == addSnd.instName &&
-									noteSoundMem[i].interval == addSnd.interval &&
-									noteSoundMem[i].barLen.denom == addSnd.barLen.denom &&
-									noteSoundMem[i].barLen.numer == addSnd.barLen.numer) {
-									sndIndex = i;
-									break;
-								}
-							}
 						}
 
-						
+						sndIndex = FindNoteSound(addSnd, noteSoundMem, noteDivideFlag);
+
 						if (sndIndex == -1) {
 							if (noteSoundMem.size() >= MAXNOTESOUND-1) {
 								printf("[MIDI data error] NOTE SOUND is needed more than %d kinds.   Bar Cnt:%d\n", MAXNOTESOUND, barCnt);
@@ -590,28 +658,17 @@ int main(void) {
 							sndIndex = noteSoundMem.size()-1;
 						}
 
+
 						// ノート番号の更新
-						if (noteDividFlag) {
+						if (noteDivideFlag) {
 							addNote ={ trackName, 0x7F, sndIndex };
-							for (int i=0; i<noteTypeMem.size(); i++) {
-								if (noteTypeMem[i].instName == addNote.instName &&
-									noteTypeMem[i].soundNum == addNote.soundNum) {
-									noteIndex = i;
-									break;
-								}
-							}
 						}
 						else {
 							addNote ={ trackName, writeBuffer[laneNum].back().CONTENT.NOTE.velocity, sndIndex };
-							for (int i=0; i<noteTypeMem.size(); i++) {
-								if (noteTypeMem[i].instName == addNote.instName &&
-									noteTypeMem[i].velocity == addNote.velocity &&
-									noteTypeMem[i].soundNum == addNote.soundNum) {
-									noteIndex = i;
-									break;
-								}
-							}
 						}
+
+						noteIndex = FindNoteType(addNote, noteTypeMem, noteDivideFlag);
+
 						if (noteIndex == -1) {
 							if (noteTypeMem.size() >= MAXNOTETYPE-1) {
 								printf("[MIDI data error] NOTE TYPE is needed more than %d kinds.   Bar Cnt:%d\n", MAXNOTETYPE, barCnt);
@@ -622,6 +679,7 @@ int main(void) {
 						}
 						writeBuffer[laneNum].back().CONTENT.NOTE.length = length;
 						writeBuffer[laneNum].back().CONTENT.NOTE.noteNum = noteIndex;
+
 						break;
 					case 0x9:
 						noteStartTime[laneNum] = totalTime;
@@ -851,7 +909,7 @@ int main(void) {
 	for (int i=0; i<noteSoundMem.size(); i++) {
 		ConvertINTtoSTR36(i, str36);
 		GetInterval(noteSoundMem[i].interval, intvl);
-		if (noteDividFlag) {
+		if (noteDivideFlag) {
 			fprintf(fpBms, "#WAV%s %s interval:%s velocity:%d len:%d/%d bar\n", str36, noteSoundMem[i].instName.c_str(), intvl, noteSoundMem[i].velocity, noteSoundMem[i].barLen.numer, noteSoundMem[i].barLen.denom);
 		}
 		else {
