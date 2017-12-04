@@ -1,4 +1,4 @@
-#pragma warning( disable : 4996 )				// Œx‚ğ–³‹
+ï»¿#pragma warning( disable : 4996 )				// è­¦å‘Šã‚’ç„¡è¦–
 
 #include "func.h"
 
@@ -12,7 +12,7 @@ int main(void) {
 	char midiFileName[_MAX_PATH];
 
 	int RESOLUTION = 0;
-	int BAR_RESOLUTION = 1;		// ‰Šú’l‚Í1‚Å
+	int BAR_RESOLUTION = 1;		// åˆæœŸå€¤ã¯1ã§
 	int TRACKS = 1;
 	int HOLDSTDLEN_ID = 0;
 	int HOLDSTDLEN = 0;
@@ -44,7 +44,7 @@ int main(void) {
 
 
 
-	// ƒ†[ƒU[“ü—Í
+	// ãƒ¦ãƒ¼ã‚¶ãƒ¼å…¥åŠ›
 	printf("MIDI FILE path >");
 	fgets(midiFileName, _MAX_PATH, stdin);
 	midiFileName[strlen(midiFileName)-1] = '\0';
@@ -92,7 +92,7 @@ int main(void) {
 	}
 	puts("");
 
-	// ƒtƒ@ƒCƒ‹ƒI[ƒvƒ“
+	// ãƒ•ã‚¡ã‚¤ãƒ«ã‚ªãƒ¼ãƒ—ãƒ³
 	fpMidi = fopen(midiFileName, "rb");
 	if (fpMidi == NULL) {
 		printf("[file error] MIDI file could not open.\n");
@@ -105,7 +105,7 @@ int main(void) {
 	}
 
 
-	// ƒfƒtƒHƒ‹ƒg’lİ’è
+	// ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆå€¤è¨­å®š
 	EVENT addEvt;
 	addEvt.totalTime = 0;
 	addEvt.timeInBar = 0;
@@ -124,33 +124,33 @@ int main(void) {
 	puts("------------------- LOG --------------------");
 
 	int trackCnt = 0;
-	while (++trackCnt <= TRACKS+1) {		// MIDIƒtƒ@ƒCƒ‹‚Ì‰ğÍƒ‹[ƒv
+	while (++trackCnt <= TRACKS+1) {		// MIDIãƒ•ã‚¡ã‚¤ãƒ«ã®è§£æãƒ«ãƒ¼ãƒ—
 		unsigned long totalTime = 0;
 		string trackName;
 
-		// ƒ`ƒƒƒ“ƒN‚ÌƒtƒH[ƒ}ƒbƒg‚ğæ“¾
+		// ãƒãƒ£ãƒ³ã‚¯ã®ãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆã‚’å–å¾—
 		char chunk[5];
-		fread(&chunk, sizeof(char), 4, fpMidi);		// ƒ`ƒƒƒ“ƒNƒ^ƒCƒvæ“¾
+		fread(&chunk, sizeof(char), 4, fpMidi);		// ãƒãƒ£ãƒ³ã‚¯ã‚¿ã‚¤ãƒ—å–å¾—
 		chunk[4] = '\0';
-		fread(tmp.data(), sizeof(char), 4, fpMidi);			// ƒf[ƒ^’·æ“¾
+		fread(tmp.data(), sizeof(char), 4, fpMidi);			// ãƒ‡ãƒ¼ã‚¿é•·å–å¾—
 		int chunkLength = ConvertBYTEtoINT(tmp.data(), 0, 4);
 
 
-		// midiƒtƒ@ƒCƒ‹‚ÌƒtƒH[ƒ}ƒbƒg‚ğŠm”F
+		// midiãƒ•ã‚¡ã‚¤ãƒ«ã®ãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆã‚’ç¢ºèª
 		if (strncmp(chunk, "MThd", 4) == 0) {
-			fread(tmp.data(), 1, 2, fpMidi);		// ƒtƒH[ƒ}ƒbƒgæ“¾
+			fread(tmp.data(), 1, 2, fpMidi);		// ãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆå–å¾—
 			tmp[2] = '\0';
 			if (ConvertBYTEtoINT(tmp.data(), 0, 2) == 2) {
 				printf("[SMF error] SMF FORMAT \"2\" is unsupported.");
 				return 1;
 			}
 
-			fread(tmp.data(), 1, 2, fpMidi);		// ƒgƒ‰ƒbƒN”æ“¾
+			fread(tmp.data(), 1, 2, fpMidi);		// ãƒˆãƒ©ãƒƒã‚¯æ•°å–å¾—
 			tmp[2] = '\0';
 
 			TRACKS = ConvertBYTEtoINT(tmp.data(), 0, 2);
 			printf("Track(s) : %d\n", TRACKS);
-			fread(tmp.data(), sizeof(char), 2, fpMidi);	// •ª‰ğ”\æ“¾
+			fread(tmp.data(), sizeof(char), 2, fpMidi);	// åˆ†è§£èƒ½å–å¾—
 			RESOLUTION = ConvertBYTEtoINT(tmp.data(), 0, 2);
 			if (RESOLUTION>>15) {
 				printf("[SMF error] this TIME UNIT FORMAT is unsupported.");
@@ -165,7 +165,7 @@ int main(void) {
 
 
 
-		// ƒgƒ‰ƒbƒNƒ`ƒƒƒ“ƒN‚Ì‰ğÍ
+		// ãƒˆãƒ©ãƒƒã‚¯ãƒãƒ£ãƒ³ã‚¯ã®è§£æ
 		for (int i=0; i<writeBuffer.size(); i++) writeBuffer[i].clear();
 
 		int remainTime = 0;
@@ -173,20 +173,20 @@ int main(void) {
 		int barCnt = 1;
 		int timeInBar = 0;
 		bool loopFlag = true;
-		while (loopFlag) {		// 1ƒgƒ‰ƒbƒN‰ğÍƒ‹[ƒv
+		while (loopFlag) {		// 1ãƒˆãƒ©ãƒƒã‚¯è§£æãƒ«ãƒ¼ãƒ—
 
 			for (int i=0; i<buffer.size(); i++) buffer[i] = '\0';
 			int bufferByte = 0;
 			int eventKind = 0;
 
 
-			// ƒfƒ‹ƒ^ƒ^ƒCƒ€‚©‚ç¬ß“à‚ÌŠÔA‹È‚Ìn‚ß‚©‚ç‚ÌŠÔA¬ß”‚ğ‹‚ß‚é
+			// ãƒ‡ãƒ«ã‚¿ã‚¿ã‚¤ãƒ ã‹ã‚‰å°ç¯€å†…ã®æ™‚é–“ã€æ›²ã®å§‹ã‚ã‹ã‚‰ã®æ™‚é–“ã€å°ç¯€æ•°ã‚’æ±‚ã‚ã‚‹
 			cnt = 0;
-			int t = ReadVariableLengthNumber(fpMidi, &cnt);		// ƒfƒ‹ƒ^ƒ^ƒCƒ€æ“¾
+			int t = ReadVariableLengthNumber(fpMidi, &cnt);		// ãƒ‡ãƒ«ã‚¿ã‚¿ã‚¤ãƒ å–å¾—
 			bufferByte+=cnt;
 
 			while (true) {
-				for (int i=beatMem.size()-1; i>=0; i--) {	// 1¬ß‚Ì’·‚³‚Ì•ª‰ğ”\‚ğæ“¾
+				for (int i=beatMem.size()-1; i>=0; i--) {	// 1å°ç¯€ã®é•·ã•ã®åˆ†è§£èƒ½ã‚’å–å¾—
 					if (beatMem[i].totalTime <= totalTime) {
 						BAR_RESOLUTION = RESOLUTION*4*beatMem[i].CONTENT.BEAT.numer/beatMem[i].CONTENT.BEAT.denom;
 						break;
@@ -207,7 +207,7 @@ int main(void) {
 				}
 
 
-				if (timeInBar+t >= BAR_RESOLUTION) {	// 1¬ß‚ğ’´‚¦‚½‚ç
+				if (timeInBar+t >= BAR_RESOLUTION) {	// 1å°ç¯€ã‚’è¶…ãˆãŸã‚‰
 					remainTime = BAR_RESOLUTION - timeInBar;
 					t -= remainTime;
 					totalTime += remainTime;
@@ -224,14 +224,14 @@ int main(void) {
 			totalTime += t;
 
 
-			fread(tmp.data(), 1, 1, fpMidi);	// ƒCƒxƒ“ƒgæ“¾
+			fread(tmp.data(), 1, 1, fpMidi);	// ã‚¤ãƒ™ãƒ³ãƒˆå–å¾—
 			bufferByte++;
 			tmp[1] = '\0';
 			eventKind = ConvertBYTEtoINT(tmp.data(), 0, 1);
 
-			// ƒ‰ƒ“ƒjƒ“ƒOƒXƒe[ƒ^ƒXƒ‹[ƒ‹‘Î‰ˆ—
+			// ãƒ©ãƒ³ãƒ‹ãƒ³ã‚°ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ«ãƒ¼ãƒ«å¯¾å¿œå‡¦ç†
 			if ((eventKind>>4) <= 0x7) {
-				if ((appliedEventKind>>4) == 0x8 || (appliedEventKind>>4) == 0x9 || (appliedEventKind>>4) == 0xb) {		//@midiƒCƒxƒ“ƒg
+				if ((appliedEventKind>>4) == 0x8 || (appliedEventKind>>4) == 0x9 || (appliedEventKind>>4) == 0xb) {		//ã€€midiã‚¤ãƒ™ãƒ³ãƒˆ
 					eventKind = appliedEventKind;
 					fseek(fpMidi, -1, SEEK_CUR);
 					bufferByte--;
@@ -242,20 +242,20 @@ int main(void) {
 			}
 
 
-			// ƒCƒxƒ“ƒg‚Ìí—Ş‚É‰‚¶‚Äˆ—
-			if ((eventKind>>4) == 0x8 || (eventKind>>4) == 0x9 || (eventKind>>4) == 0xb) {		//@midiƒCƒxƒ“ƒg
+			// ã‚¤ãƒ™ãƒ³ãƒˆã®ç¨®é¡ã«å¿œã˜ã¦å‡¦ç†
+			if ((eventKind>>4) == 0x8 || (eventKind>>4) == 0x9 || (eventKind>>4) == 0xb) {		//ã€€midiã‚¤ãƒ™ãƒ³ãƒˆ
 
-				fread(tmp.data(), 1, 1, fpMidi);	// ƒm[ƒgƒiƒ“ƒo[æ“¾
+				fread(tmp.data(), 1, 1, fpMidi);	// ãƒãƒ¼ãƒˆãƒŠãƒ³ãƒãƒ¼å–å¾—
 				bufferByte++;
 				tmp[1] = '\0';
 				int noteNum = ConvertBYTEtoINT(tmp.data(), 0, 1);
-				fread(tmp.data(), 1, 1, fpMidi);	// ƒxƒƒVƒeƒBæ“¾
+				fread(tmp.data(), 1, 1, fpMidi);	// ãƒ™ãƒ­ã‚·ãƒ†ã‚£å–å¾—
 				bufferByte++;
 				tmp[1] = '\0';
 				int velocity = ConvertBYTEtoINT(tmp.data(), 0, 1);
 
 
-				// ƒŒ[ƒ“”Ô†‚Ìæ“¾
+				// ãƒ¬ãƒ¼ãƒ³ç•ªå·ã®å–å¾—
 				LANETYPE addLane ={ trackCnt, trackName, noteNum };
 				int laneNum = FindLaneType(addLane, laneTypeMem, laneDivideFlag);
 		
@@ -269,7 +269,7 @@ int main(void) {
 				}
 
 
-				// ƒm[ƒgî•ñ‚ğˆ—
+				// ãƒãƒ¼ãƒˆæƒ…å ±ã‚’å‡¦ç†
 				bool addFlag = false;
 				int noteIndex = -1;
 				int sndIndex = -1;
@@ -285,7 +285,7 @@ int main(void) {
 							holdCnt++;
 						}
 
-						// ƒL[‰¹‚Ì’Ç‰Á
+						// ã‚­ãƒ¼éŸ³ã®è¿½åŠ 
 						addSnd.instName = trackName;
 						addSnd.interval = noteNum;
 						addSnd.barLen	= GetBarLength(noteStartTime[laneNum], length, RESOLUTION, beatMem);
@@ -308,7 +308,7 @@ int main(void) {
 						}
 
 
-						// ƒm[ƒg”Ô†‚ÌXV
+						// ãƒãƒ¼ãƒˆç•ªå·ã®æ›´æ–°
 						if (noteDivideFlag) {
 							addNote ={ trackName, 0x7F, sndIndex };
 						}
@@ -337,7 +337,7 @@ int main(void) {
 				}
 
 
-				if (addFlag) {	// ‘‚«‚İƒoƒbƒtƒ@‚Ö’Ç‰Á
+				if (addFlag) {	// æ›¸ãè¾¼ã¿ãƒãƒƒãƒ•ã‚¡ã¸è¿½åŠ 
 					if (writeBuffer[laneNum].size() > 0 && writeBuffer[laneNum].back().totalTime == totalTime) {
 						printf("[MIDI data error]  NOTE event occured simultaneously.  Bar Cnt:%d\n", barCnt);
 						//return 1;
@@ -356,11 +356,11 @@ int main(void) {
 					noteCnt++;
 				}
 			}
-			else if (eventKind == 0xf0 || eventKind == 0xf7) {	// ƒGƒNƒXƒNƒ‹[ƒVƒuƒƒbƒZ[ƒW
+			else if (eventKind == 0xf0 || eventKind == 0xf7) {	// ã‚¨ã‚¯ã‚¹ã‚¯ãƒ«ãƒ¼ã‚·ãƒ–ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸
 
 			}
-			else if (eventKind == 0xff) {						// ƒƒ^ƒCƒxƒ“ƒg
-				fread(tmp.data(), 1, 1, fpMidi);	// ƒCƒxƒ“ƒgƒ^ƒCƒvæ“¾
+			else if (eventKind == 0xff) {						// ãƒ¡ã‚¿ã‚¤ãƒ™ãƒ³ãƒˆ
+				fread(tmp.data(), 1, 1, fpMidi);	// ã‚¤ãƒ™ãƒ³ãƒˆã‚¿ã‚¤ãƒ—å–å¾—
 				bufferByte++;
 				tmp[1] = '\0';
 				int eventType = ConvertBYTEtoINT(tmp.data(), 0, 1);
@@ -372,19 +372,19 @@ int main(void) {
 
 				int musec;
 				switch (eventType) {
-					case 0x03:	// ƒgƒ‰ƒbƒN–¼
+					case 0x03:	// ãƒˆãƒ©ãƒƒã‚¯å
 						trackName.clear();
 						for (int i=0; i<buffer[i] != '\0'; i++) {
 							trackName += buffer[i];
 						}
 						trackName += '\0';
 						break;
-					case 0x2f:	// ƒgƒ‰ƒbƒNI’[
+					case 0x2f:	// ãƒˆãƒ©ãƒƒã‚¯çµ‚ç«¯
 						loopFlag = false;
 						break;
-					case 0x51:	// ƒeƒ“ƒ|
+					case 0x51:	// ãƒ†ãƒ³ãƒ
 						if (!tempoSetFlag) {
-							// ‚Ü‚¾ƒeƒ“ƒ|î•ñ‚ª“o˜^‚³‚ê‚Ä‚¢‚È‚¢‚È‚ç
+							// ã¾ã ãƒ†ãƒ³ãƒæƒ…å ±ãŒç™»éŒ²ã•ã‚Œã¦ã„ãªã„ãªã‚‰
 							tempoMem.clear();
 							tempoSetFlag = true;
 						}
@@ -397,7 +397,7 @@ int main(void) {
 						addEvt.CONTENT.TEMPO.tempo = (float)60*1000000/musec;
 						tempoMem.push_back(addEvt);
 						break;
-					case 0x58:	// ”q
+					case 0x58:	// æ‹å­
 						if (!beatSetFlag) {
 							beatMem.clear();
 							beatSetFlag = true;
@@ -426,22 +426,22 @@ int main(void) {
 				endBar = barCnt;
 			}
 
-		}	// 1ƒgƒ‰ƒbƒN‰ğÍƒ‹[ƒv
+		}	// 1ãƒˆãƒ©ãƒƒã‚¯è§£æãƒ«ãƒ¼ãƒ—
 
 
 
 
-		// BMSƒtƒ@ƒCƒ‹‚Ö‘‚«‚İ
+		// BMSãƒ•ã‚¡ã‚¤ãƒ«ã¸æ›¸ãè¾¼ã¿
 		vector<int> startNum(MAXNOTELAME, 0);
 		int crtBar = 0;
-		while (++crtBar <= barCnt) {	//@1ƒgƒ‰ƒbƒN‘‚«‚İƒ‹[ƒv
+		while (++crtBar <= barCnt) {	//ã€€1ãƒˆãƒ©ãƒƒã‚¯æ›¸ãè¾¼ã¿ãƒ«ãƒ¼ãƒ—
 
-			for (int i=0; i<MAXNOTELAME; i++) {		// ‘Sƒm[ƒgƒŒ[ƒ“‘‚«‚İƒ‹[ƒv
+			for (int i=0; i<MAXNOTELAME; i++) {		// å…¨ãƒãƒ¼ãƒˆãƒ¬ãƒ¼ãƒ³æ›¸ãè¾¼ã¿ãƒ«ãƒ¼ãƒ—
 				if (writeBuffer[i].size() == 0) {
 					continue;
 				}
 
-				int begin = startNum[i];	// ‘‚«‚Şƒf[ƒ^‚Ì”ÍˆÍ‚ğZo
+				int begin = startNum[i];	// æ›¸ãè¾¼ã‚€ãƒ‡ãƒ¼ã‚¿ã®ç¯„å›²ã‚’ç®—å‡º
 				int end = -1;
 
 				for (int j=begin; j<writeBuffer[i].size(); j++) {
@@ -454,7 +454,7 @@ int main(void) {
 				int prevTime = 0;
 				int minUnit = BAR_RESOLUTION;
 
-				for (int j=begin; j<end; j++) {		// ‰¹•„‚Ì’·‚³‚ÌÅ¬Œö–ñ”‚ğZo
+				for (int j=begin; j<end; j++) {		// éŸ³ç¬¦ã®é•·ã•ã®æœ€å°å…¬ç´„æ•°ã‚’ç®—å‡º
 					int deltaTime = writeBuffer[i][j].timeInBar - prevTime;
 					if (deltaTime > 0) {
 						minUnit = CalcGCD(minUnit, deltaTime);
@@ -465,7 +465,7 @@ int main(void) {
 
 				ConvertINTtoSTR36(i+36, str36);
 				fprintf(fpBms, "#%03d%s:", crtBar, str36);
-				for (int j=begin; j<end; j++) {		// bmsƒtƒ@ƒCƒ‹‚É‘‚«‚İ
+				for (int j=begin; j<end; j++) {		// bmsãƒ•ã‚¡ã‚¤ãƒ«ã«æ›¸ãè¾¼ã¿
 					int offset = writeBuffer[i][j].timeInBar/minUnit;
 
 					for (int k=writeByte; k<offset; k++) {
@@ -485,7 +485,7 @@ int main(void) {
 					}
 				}
 
-				while (writeByte < (BAR_RESOLUTION/minUnit)) {	// —]‚è‚ğ0‚Å–„‚ß‚é
+				while (writeByte < (BAR_RESOLUTION/minUnit)) {	// ä½™ã‚Šã‚’0ã§åŸ‹ã‚ã‚‹
 					fprintf(fpBms, "00");
 					writeByte++;
 				}
@@ -497,12 +497,12 @@ int main(void) {
 
 		printf("completed analysis > Track no.%03d\n", trackCnt);
 
-	} // MIDIƒtƒ@ƒCƒ‹‚Ì‰ğÍƒ‹[ƒv
+	} // MIDIãƒ•ã‚¡ã‚¤ãƒ«ã®è§£æãƒ«ãƒ¼ãƒ—
 
 	printf("completed MIDI file analysis.\n");
 
 
-	// ƒƒOo—Í
+	// ãƒ­ã‚°å‡ºåŠ›
 	puts("------------------ RESULT ------------------");
 	printf("all NOTE cnt	%4d\n", noteCnt);
 	printf("HOLD NOTE cnt	%4d\n\n", holdCnt);
