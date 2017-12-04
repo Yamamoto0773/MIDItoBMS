@@ -1,6 +1,6 @@
 ﻿#pragma warning( disable : 4996 )				// 警告を無視
 
-#include "func.h"
+#include "func.hpp"
 
 int main(void) {
 	using namespace std;

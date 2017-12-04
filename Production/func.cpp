@@ -1,6 +1,6 @@
-#include "func.h"
+ï»¿#include "func.hpp"
 
-// Å‘åŒö–ñ”‚ğ‹‚ß‚éŠÖ”
+// æœ€å¤§å…¬ç´„æ•°ã‚’æ±‚ã‚ã‚‹é–¢æ•°
 int CalcGCD(int a, int b) {
 	if (a == 0 || b == 0)
 		return 0;
@@ -22,8 +22,8 @@ int CalcGCD(int a, int b) {
 }
 
 
-// ‰Â•Ï’·”’l‚ğƒtƒ@ƒCƒ‹‚©‚çæ“¾
-// –ß‚è’l‚ÍŒÅ’è’·”’l
+// å¯å¤‰é•·æ•°å€¤ã‚’ãƒ•ã‚¡ã‚¤ãƒ«ã‹ã‚‰å–å¾—
+// æˆ»ã‚Šå€¤ã¯å›ºå®šé•·æ•°å€¤
 int ReadVariableLengthNumber(FILE *fp, int *byteCnt) {
 	if (!fp)
 		return 0;
@@ -46,7 +46,7 @@ int ReadVariableLengthNumber(FILE *fp, int *byteCnt) {
 		n |= (tmp2&0b01111111);
 
 		if (!(tmp2 >> 7)) {
-			// ƒrƒbƒg7‚ª0‚È‚çæ“¾I—¹
+			// ãƒ“ãƒƒãƒˆ7ãŒ0ãªã‚‰å–å¾—çµ‚äº†
 			break;
 		}
 	}
@@ -55,7 +55,7 @@ int ReadVariableLengthNumber(FILE *fp, int *byteCnt) {
 }
 
 
-// ƒrƒbƒOƒGƒ“ƒfƒBƒAƒ“Œ`®‚ÅŠi”[‚³‚ê‚½byte(unsigned char)Œ^•¶š—ñ‚ğintŒ^‚É•ÏŠ·
+// ãƒ“ãƒƒã‚°ã‚¨ãƒ³ãƒ‡ã‚£ã‚¢ãƒ³å½¢å¼ã§æ ¼ç´ã•ã‚ŒãŸbyte(unsigned char)å‹æ–‡å­—åˆ—ã‚’intå‹ã«å¤‰æ›
 int ConvertBYTEtoINT(unsigned char *str, int elementOffset, int elementCnt) {
 	int i, j;
 	int n = 0;
@@ -85,8 +85,8 @@ int ConvertBYTEtoINT(unsigned char *str, int elementOffset, int elementCnt) {
 }
 
 
-// intŒ^‚ğƒrƒbƒOƒGƒ“ƒfƒBƒAƒ“Œ`®‚Åbyte(unsigned char)Œ^•¶š—ñ‚É•ÏŠ·
-// –ß‚è’l‚Í•ÏŠ·‚µ‚½byte”
+// intå‹ã‚’ãƒ“ãƒƒã‚°ã‚¨ãƒ³ãƒ‡ã‚£ã‚¢ãƒ³å½¢å¼ã§byte(unsigned char)å‹æ–‡å­—åˆ—ã«å¤‰æ›
+// æˆ»ã‚Šå€¤ã¯å¤‰æ›ã—ãŸbyteæ•°
 int ConvertINTtoBYTE(int num, unsigned char *str) {
 	int i;
 	int tmp1, tmp2;
@@ -95,7 +95,7 @@ int ConvertINTtoBYTE(int num, unsigned char *str) {
 	tmp1 = num;
 	while (true) {
 		num >>= 8;
-		tmp2 = tmp1 - (num << 8);	// ‰ºˆÊ8ƒrƒbƒgæ‚èo‚µ
+		tmp2 = tmp1 - (num << 8);	// ä¸‹ä½8ãƒ“ãƒƒãƒˆå–ã‚Šå‡ºã—
 
 		str[i] &= 0x00;
 		str[i] |= tmp2;
@@ -107,7 +107,7 @@ int ConvertINTtoBYTE(int num, unsigned char *str) {
 		tmp1 = num;
 	}
 
-	// •¶š—ñ‚ğ”½“]
+	// æ–‡å­—åˆ—ã‚’åè»¢
 	for (int k=0; k < i/2; k++) {
 		int t = str[k];
 		str[k] = str[i-k-1];
@@ -117,7 +117,7 @@ int ConvertINTtoBYTE(int num, unsigned char *str) {
 }
 
 
-// intŒ^‚ğ36i”•¶š—ñ‚É•ÏŠ·
+// intå‹ã‚’36é€²æ•°æ–‡å­—åˆ—ã«å¤‰æ›
 int ConvertINTtoSTR36(int num, char *buffer) {
 	int cnt = 1;
 
@@ -140,7 +140,7 @@ int ConvertINTtoSTR36(int num, char *buffer) {
 }
 
 
-// intŒ^®”‚ğ‰¹ŠK‚É•ÏŠ·
+// intå‹æ•´æ•°ã‚’éŸ³éšã«å¤‰æ›
 int GetInterval(int num, char *interval) {
 	if (interval == NULL) return 0;
 
@@ -179,7 +179,7 @@ int GetInterval(int num, char *interval) {
 }
 
 
-// ŠÔ’PˆÊ‚ğ¬ß‚ğŠî€‚Æ‚µ‚½’·‚³‚É•ÏŠ·
+// æ™‚é–“å˜ä½ã‚’å°ç¯€ã‚’åŸºæº–ã¨ã—ãŸé•·ã•ã«å¤‰æ›
 LENGTH GetBarLength(long startTime, long count, long resolution, const std::vector<EVENT> &beat) {
 	long remain = count;
 	LENGTH ans;
@@ -207,7 +207,7 @@ LENGTH GetBarLength(long startTime, long count, long resolution, const std::vect
 }
 
 
-// ƒm[ƒg”Ô†‚ÌŒŸõ
+// ãƒãƒ¼ãƒˆç•ªå·ã®æ¤œç´¢
 int FindNoteType(const NOTETYPE &obj, const std::vector<NOTETYPE> &aggregate, bool divideFlag) {
 	int index = -1;
 
@@ -235,7 +235,7 @@ int FindNoteType(const NOTETYPE &obj, const std::vector<NOTETYPE> &aggregate, bo
 }
 
 
-// ƒL[‰¹‚ÌŒŸõ
+// ã‚­ãƒ¼éŸ³ã®æ¤œç´¢
 int FindNoteSound(const NOTESOUND &obj, const std::vector<NOTESOUND> &aggregate, bool divideFlag) {
 	int index = -1;
 
@@ -267,7 +267,7 @@ int FindNoteSound(const NOTESOUND &obj, const std::vector<NOTESOUND> &aggregate,
 }
 
 
-// ƒm[ƒgƒŒ[ƒ“‚ÌŒŸõ
+// ãƒãƒ¼ãƒˆãƒ¬ãƒ¼ãƒ³ã®æ¤œç´¢
 int FindLaneType(const LANETYPE &obj, const std::vector<LANETYPE> &aggregate, bool divideFlag) {
 	int index = -1;
 
