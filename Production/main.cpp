@@ -6,10 +6,13 @@ int main(void) {
 	using namespace std;
 
 
-	FILE *fpMidi = NULL;
-	FILE *fpBms	= NULL;
+	// FILE *fpMidi = NULL;
+	// FILE *fpBms	= NULL;
 
-	char midiFileName[_MAX_PATH];
+	ifstream ifMidi;
+	ofstream ofBms; 
+
+	char midiFileName[256];
 
 	int RESOLUTION = 0;
 	int BAR_RESOLUTION = 1;		// 初期値は1で
@@ -25,11 +28,10 @@ int main(void) {
 	int noteCnt = 0;
 	int holdCnt = 0;
 
-	vector<vector<EVENT>> writeBuffer(MAXNOTELAME);
+	vector< vector<EVENT> > writeBuffer(MAXNOTELAME);
 	vector<NOTETYPE> noteTypeMem;
 	vector<LANETYPE> laneTypeMem;
 	vector<NOTESOUND> noteSoundMem;
-	vector<unsigned char> buffer(1024);
 	vector<int> noteStartTime(MAXNOTELAME, -1);
 	vector<EVENT> tempoMem;
 	vector<EVENT> beatMem;
@@ -37,7 +39,8 @@ int main(void) {
 	bool beatSetFlag = false;
 
 	int cnt;
-	vector<unsigned char> tmp(5);
+	char tmp[5];
+	string buffer(256, '\0');
 
 	char str36[3];
 	char intvl[5];
@@ -45,16 +48,16 @@ int main(void) {
 
 
 	// ユーザー入力
-	printf("MIDI FILE path >");
-	fgets(midiFileName, _MAX_PATH, stdin);
+	printf("MIDI FILE path >"); 
+	fgets(midiFileName, 256, stdin);
 	midiFileName[strlen(midiFileName)-1] = '\0';
 	while (true) {
 		printf("HOLD standard length\n");
-		printf("0:none			1:sixteenth-note\n"
-			"2:eighth-note		3:quarter note\n"
-			"4:half note		5:whole note\n"
-			"6:whole note*1.5	7:whole note*2.0\n"
-			"8:whole note*2.5	9:whole note*3.0	>");
+		printf(" 0:none			1:sixteenth-note\n"
+			" 2:eighth-note		3:quarter note\n"
+			" 4:half note		5:whole note\n"
+			" 6:whole note*1.5	7:whole note*2.0\n"
+			" 8:whole note*2.5	9:whole note*3.0	>");
 		scanf("%d", &HOLDSTDLEN_ID);
 		if (0 > HOLDSTDLEN_ID || HOLDSTDLEN_ID > 7) {
 			printf("[input error] please type 0-4 in the integer.\n");
@@ -93,13 +96,13 @@ int main(void) {
 	puts("");
 
 	// ファイルオープン
-	fpMidi = fopen(midiFileName, "rb");
-	if (fpMidi == NULL) {
+	ifMidi.open(midiFileName, ios_base::binary);
+	if (!ifMidi) {
 		printf("[file error] MIDI file could not open.\n");
 		return 1;
 	}
-	fpBms = fopen("BMS.txt", "w");
-	if (fpBms == NULL) {
+	ofBms.open("BMS.txt", ios_base::trunc);
+	if (!ofBms) {
 		printf("[file error] BMS file could not open.\n");
 		return 1;
 	}
@@ -113,6 +116,7 @@ int main(void) {
 	addEvt.eventKind = 0x51;
 	addEvt.CONTENT.TEMPO.tempo = 120;
 	tempoMem.push_back(addEvt);
+
 	addEvt.eventKind = 0x58;
 	addEvt.CONTENT.BEAT.numer = 4;
 	addEvt.CONTENT.BEAT.denom = 4;
@@ -130,28 +134,25 @@ int main(void) {
 
 		// チャンクのフォーマットを取得
 		char chunk[5];
-		fread(&chunk, sizeof(char), 4, fpMidi);		// チャンクタイプ取得
+		ifMidi.read(chunk, 4);		// チャンクタイプ取得
 		chunk[4] = '\0';
-		fread(tmp.data(), sizeof(char), 4, fpMidi);			// データ長取得
-		int chunkLength = ConvertBYTEtoINT(tmp.data(), 0, 4);
+		ifMidi.read(tmp, 4);		// データ長取得
+		int chunkLength = ConvertCHARtoINT(tmp, 0, 4);
 
 
 		// midiファイルのフォーマットを確認
 		if (strncmp(chunk, "MThd", 4) == 0) {
-			fread(tmp.data(), 1, 2, fpMidi);		// フォーマット取得
-			tmp[2] = '\0';
-			if (ConvertBYTEtoINT(tmp.data(), 0, 2) == 2) {
+			ifMidi.read(tmp, 2);		// フォーマット取得
+			if (ConvertCHARtoINT(tmp, 0, 2) == 2) {
 				printf("[SMF error] SMF FORMAT \"2\" is unsupported.");
 				return 1;
 			}
 
-			fread(tmp.data(), 1, 2, fpMidi);		// トラック数取得
-			tmp[2] = '\0';
-
-			TRACKS = ConvertBYTEtoINT(tmp.data(), 0, 2);
+			ifMidi.read(tmp, 2);		// トラック数取得
+			TRACKS = ConvertCHARtoINT(tmp, 0, 2);
 			printf("Track(s) : %d\n", TRACKS);
-			fread(tmp.data(), sizeof(char), 2, fpMidi);	// 分解能取得
-			RESOLUTION = ConvertBYTEtoINT(tmp.data(), 0, 2);
+			ifMidi.read(tmp, 2);		// 分解能取得
+			RESOLUTION = ConvertCHARtoINT(tmp, 0, 2);
 			if (RESOLUTION>>15) {
 				printf("[SMF error] this TIME UNIT FORMAT is unsupported.");
 				return 1;
@@ -161,8 +162,6 @@ int main(void) {
 
 			continue;
 		}
-
-
 
 
 		// トラックチャンクの解析
@@ -175,14 +174,13 @@ int main(void) {
 		bool loopFlag = true;
 		while (loopFlag) {		// 1トラック解析ループ
 
-			for (int i=0; i<buffer.size(); i++) buffer[i] = '\0';
+			buffer.erase(buffer.begin(), buffer.begin()+buffer.length());
 			int bufferByte = 0;
 			int eventKind = 0;
 
-
 			// デルタタイムから小節内の時間、曲の始めからの時間、小節数を求める
 			cnt = 0;
-			int t = ReadVariableLengthNumber(fpMidi, &cnt);		// デルタタイム取得
+			int t = ReadVariableLengthNumber(ifMidi, &cnt);		// デルタタイム取得
 			bufferByte+=cnt;
 
 			while (true) {
@@ -224,16 +222,15 @@ int main(void) {
 			totalTime += t;
 
 
-			fread(tmp.data(), 1, 1, fpMidi);	// イベント取得
+			ifMidi.read(tmp, 1);	// イベント取得
 			bufferByte++;
-			tmp[1] = '\0';
-			eventKind = ConvertBYTEtoINT(tmp.data(), 0, 1);
+			eventKind = ConvertCHARtoINT(tmp, 0, 1);
 
 			// ランニングステータスルール対応処理
 			if ((eventKind>>4) <= 0x7) {
 				if ((appliedEventKind>>4) == 0x8 || (appliedEventKind>>4) == 0x9 || (appliedEventKind>>4) == 0xb) {		//　midiイベント
 					eventKind = appliedEventKind;
-					fseek(fpMidi, -1, SEEK_CUR);
+					ifMidi.seekg(-1, ios_base::cur);
 					bufferByte--;
 				}
 			}
@@ -244,16 +241,12 @@ int main(void) {
 
 			// イベントの種類に応じて処理
 			if ((eventKind>>4) == 0x8 || (eventKind>>4) == 0x9 || (eventKind>>4) == 0xb) {		//　midiイベント
-
-				fread(tmp.data(), 1, 1, fpMidi);	// ノートナンバー取得
+				ifMidi.read(tmp, 1);	// ノートナンバー取得
 				bufferByte++;
-				tmp[1] = '\0';
-				int noteNum = ConvertBYTEtoINT(tmp.data(), 0, 1);
-				fread(tmp.data(), 1, 1, fpMidi);	// ベロシティ取得
+				int noteNum = ConvertCHARtoINT(tmp, 0, 1);
+				ifMidi.read(tmp, 1);	// ベロシティ取得
 				bufferByte++;
-				tmp[1] = '\0';
-				int velocity = ConvertBYTEtoINT(tmp.data(), 0, 1);
-
+				int velocity = ConvertCHARtoINT(tmp, 0, 1);
 
 				// レーン番号の取得
 				LANETYPE addLane ={ trackCnt, trackName, noteNum };
@@ -310,10 +303,14 @@ int main(void) {
 
 						// ノート番号の更新
 						if (noteDivideFlag) {
-							addNote ={ trackName, 0x7F, sndIndex };
+							addNote.instName = trackName;
+							addNote.velocity = 0x7F;
+							addNote.soundNum = sndIndex;
 						}
 						else {
-							addNote ={ trackName, writeBuffer[laneNum].back().CONTENT.NOTE.velocity, sndIndex };
+							addNote.instName = trackName;
+							addNote.velocity = writeBuffer[laneNum].back().CONTENT.NOTE.velocity;
+							addNote.soundNum = sndIndex;
 						}
 
 						noteIndex = FindNoteType(addNote, noteTypeMem, noteDivideFlag);
@@ -360,14 +357,13 @@ int main(void) {
 
 			}
 			else if (eventKind == 0xff) {						// メタイベント
-				fread(tmp.data(), 1, 1, fpMidi);	// イベントタイプ取得
+				ifMidi.read(tmp, 1);	// イベントタイプ取得
 				bufferByte++;
-				tmp[1] = '\0';
-				int eventType = ConvertBYTEtoINT(tmp.data(), 0, 1);
+				int eventType = ConvertCHARtoINT(tmp, 0, 1);
 				cnt = 0;
-				int eventLen = ReadVariableLengthNumber(fpMidi, &cnt);
+				int eventLen = ReadVariableLengthNumber(ifMidi, &cnt);
 				bufferByte++;
-				fread(buffer.data(), 1, eventLen, fpMidi);
+				ifMidi.read(&buffer[0], eventLen);
 				bufferByte+=eventLen;
 
 				int musec;
@@ -393,7 +389,7 @@ int main(void) {
 						addEvt.timeInBar = timeInBar;
 						addEvt.bar = barCnt;
 						addEvt.eventKind = 0x51;
-						musec = ConvertBYTEtoINT(buffer.data(), 0, 3);
+						musec = ConvertCHARtoINT(buffer.c_str(), 0, 3);
 						addEvt.CONTENT.TEMPO.tempo = (float)60*1000000/musec;
 						tempoMem.push_back(addEvt);
 						break;
@@ -406,8 +402,8 @@ int main(void) {
 						addEvt.totalTime = totalTime;
 						addEvt.timeInBar = timeInBar;
 						addEvt.eventKind = 0x58;
-						addEvt.CONTENT.BEAT.numer = ConvertBYTEtoINT(buffer.data(), 0, 1);
-						addEvt.CONTENT.BEAT.denom = (int)pow(2, ConvertBYTEtoINT(buffer.data(), 1, 1));
+						addEvt.CONTENT.BEAT.numer = ConvertCHARtoINT(buffer.c_str(), 0, 1);
+						addEvt.CONTENT.BEAT.denom = pow(2, ConvertCHARtoINT(buffer.c_str(), 1, 1));
 						addEvt.bar = barCnt;
 						beatMem.push_back(addEvt);
 						break;
@@ -464,32 +460,32 @@ int main(void) {
 
 
 				ConvertINTtoSTR36(i+36, str36);
-				fprintf(fpBms, "#%03d%s:", crtBar, str36);
+				ofBms << "#" << setfill('0') << setw(3) << crtBar << str36 << ":";
 				for (int j=begin; j<end; j++) {		// bmsファイルに書き込み
 					int offset = writeBuffer[i][j].timeInBar/minUnit;
 
 					for (int k=writeByte; k<offset; k++) {
-						fprintf(fpBms, "00");
+						ofBms << "00";
 						writeByte++;
 					}
 					switch (writeBuffer[i][j].eventKind>>4) {
 						case 0x8:
-							fprintf(fpBms, "ZZ");
+							ofBms << "ZZ";
 							writeByte++;
 							break;
 						case 0x9:
 							ConvertINTtoSTR36(writeBuffer[i][j].CONTENT.NOTE.noteNum, str36);
-							fprintf(fpBms, "%s", str36);
+							ofBms << str36;
 							writeByte++;
 							break;
 					}
 				}
 
 				while (writeByte < (BAR_RESOLUTION/minUnit)) {	// 余りを0で埋める
-					fprintf(fpBms, "00");
+					ofBms << "00";					
 					writeByte++;
 				}
-				fprintf(fpBms, "\n");
+				ofBms << endl;
 
 				startNum[i] = end;
 			}
@@ -507,9 +503,9 @@ int main(void) {
 	printf("all NOTE cnt	%4d\n", noteCnt);
 	printf("HOLD NOTE cnt	%4d\n\n", holdCnt);
 	puts("*BEAT");
-	fprintf(fpBms, "\n");
-	fprintf(fpBms, "#DIFINESTART HEADER\n");
-	fprintf(fpBms, "//BEAT\n");
+	ofBms << endl;
+	ofBms << "#DIFINESTART HEADER" << endl;
+	ofBms << "//BEAT" << endl;
 	for (int i=0; i<beatMem.size(); i++) {
 		printf("BAR:%03d-  beat:%d/%d\n", beatMem[i].bar, beatMem[i].CONTENT.BEAT.numer, beatMem[i].CONTENT.BEAT.denom);
 	}
@@ -520,70 +516,71 @@ int main(void) {
 			beatTmp = (float)beatMem[cnt].CONTENT.BEAT.numer/beatMem[cnt].CONTENT.BEAT.denom;
 			cnt++;
 		}
-		fprintf(fpBms, "#%03d02:%f\n", i, beatTmp);
+		ofBms << "#" << setfill('0') << setw(3) << i << "02:" << beatTmp << endl; 
 	}
 	printf("\n*TEMPO\n");
-	fprintf(fpBms, "\n");
-	fprintf(fpBms, "//TEMPO\n");
-	fprintf(fpBms, "#BPM %f\n", tempoMem[0].CONTENT.TEMPO.tempo);
+	ofBms << endl;
+	ofBms << "//TEMPO" << endl;
+	ofBms << "#BPM " << tempoMem[0].CONTENT.TEMPO.tempo << endl;
 	printf("BAR:%03d-  bpm:%f\n", tempoMem[0].bar, tempoMem[0].CONTENT.TEMPO.tempo);
 	for (int i=1; i<tempoMem.size(); i++) {
 		printf("BAR:%03d-  bpm:%f\n", tempoMem[i].bar, tempoMem[i].CONTENT.TEMPO.tempo);
 		ConvertINTtoSTR36(i, str36);
-		fprintf(fpBms, "#BPM%s %f\n", str36, tempoMem[i].CONTENT.TEMPO.tempo);
+		ofBms << "#BPM" << str36 << " " << tempoMem[i].CONTENT.TEMPO.tempo << endl;
 	}
-	fprintf(fpBms, "\n");
+	ofBms << endl;
 	for (int i=1; i<tempoMem.size(); i++) {
 		ConvertINTtoSTR36(i, str36);
-		fprintf(fpBms, "#%03d08:%s\n", tempoMem[i].bar, str36);
+		ofBms << "#" << setfill('0') << setw(3) << tempoMem[i].bar << "08:" << str36 << endl;
 	}
-	fprintf(fpBms, "#DEFINEEND HEADER\n");
-	fprintf(fpBms, "\n");
-	fprintf(fpBms, "//NOTELANE\n");
+	ofBms << "#DEFINEEND HEADER\n";
+	ofBms << endl;
+	ofBms << "//NOTELANE\n";
 	printf("\nNOTE LANE	%4d kind[s]\n", laneTypeMem.size());
 	for (int i=0; i<laneTypeMem.size(); i++) {
 		ConvertINTtoSTR36(i, str36);
 		if (laneDivideFlag) {
 			GetInterval(laneTypeMem[i].interval, intvl);
-			fprintf(fpBms, "#LANENAME%s:TRACK %d %s  INTERVAL:%s\n", str36, laneTypeMem[i].trackNum, laneTypeMem[i].instName.c_str(), intvl);
+			ofBms << "#LANENAME" << str36 << ":TRACK " << laneTypeMem[i].trackNum << " "
+				<< laneTypeMem[i].instName << "  INTERVAL:" << intvl << endl;
 		}
 		else {
-			fprintf(fpBms, "#LANENAME%s:TRACK %d %s\n", str36, laneTypeMem[i].trackNum, laneTypeMem[i].instName.c_str());
+			ofBms << "#LANENAME" << str36 << ":TRACK " << laneTypeMem[i].trackNum << " "
+				<< laneTypeMem[i].instName << endl;
 		}
-		fprintf(fpBms, "#LANEPOS%s:\n", str36);
+		ofBms << "#LANEPOS" << str36 << ":\n";
 	}
-	fprintf(fpBms, "\n");
-	fprintf(fpBms, "//WAV\n");
+	ofBms << endl;
+	ofBms << "//WAV\n";
 	printf("NOTE SOUND	%4d kind[s]\n", noteSoundMem.size());
 	for (int i=0; i<noteSoundMem.size(); i++) {
 		ConvertINTtoSTR36(i, str36);
 		GetInterval(noteSoundMem[i].interval, intvl);
 		if (noteDivideFlag) {
-			fprintf(fpBms, "#WAV%s %s interval:%s velocity:%d len:%d/%d bar\n", str36, noteSoundMem[i].instName.c_str(), intvl, noteSoundMem[i].velocity, noteSoundMem[i].barLen.numer, noteSoundMem[i].barLen.denom);
+			ofBms << "#WAV" << str36 << " " << noteSoundMem[i].instName << " interval:" << intvl
+				<< " velocity:" << noteSoundMem[i].velocity << " len:" << noteSoundMem[i].barLen.numer
+				<< "/" << noteSoundMem[i].barLen.denom << " bar\n";
 		}
 		else {
-			fprintf(fpBms, "#WAV%s %s interval:%s len:%d/%d bar\n", str36, noteSoundMem[i].instName.c_str(), intvl, noteSoundMem[i].barLen.numer, noteSoundMem[i].barLen.denom);
+			ofBms << "#WAV" << str36 << " " << noteSoundMem[i].instName << " interval:" << intvl
+				<< " len:" << noteSoundMem[i].barLen.numer << "/" << noteSoundMem[i].barLen.denom << " bar\n";
 		}
 	}
-	fprintf(fpBms, "\n");
-	fprintf(fpBms, "//BACK MUSIC\n");
+	ofBms << endl;
+	ofBms << "//BACK MUSIC\n";
 	ConvertINTtoSTR36(MAXNOTESOUND-1, str36);
-	fprintf(fpBms, "#WAV%s back music\n", str36);
-	fprintf(fpBms, "#00101:%s\n", str36);
-	fprintf(fpBms, "\n");
-	fprintf(fpBms, "//NOTESOUND & NOTEVOL\n");
+	ofBms << "#WAV" << str36 << " back music\n";
+	ofBms << "#00101:" << str36 << endl;
+	ofBms << endl;
+	ofBms << "//NOTESOUND & NOTEVOL\n";
 	printf("NOTE TYPE	%4d kind[s]\n", noteTypeMem.size()-1);
 	char str36a[3];
 	for (int i=1; i<noteTypeMem.size(); i++) {
 		ConvertINTtoSTR36(i, str36);
 		ConvertINTtoSTR36(noteTypeMem[i].soundNum, str36a);
-		fprintf(fpBms, "#NOTESOUND%s %s\n", str36, str36a);
-		fprintf(fpBms, "#NOTEVOL%s %f\n", str36, sqrtf((float)noteTypeMem[i].velocity/0x7f));
+		ofBms << "#NOTESOUND" << str36 << " " << str36a << endl;
+		ofBms << "#NOTEVOL" << str36 << " " << sqrtf((float)noteTypeMem[i].velocity/0x7f);
 	}
-
-
-	fclose(fpMidi);
-	fclose(fpBms);
 
 
 	return 0;

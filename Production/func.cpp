@@ -24,23 +24,18 @@ int CalcGCD(int a, int b) {
 
 // 可変長数値をファイルから取得
 // 戻り値は固定長数値
-int ReadVariableLengthNumber(FILE *fp, int *byteCnt) {
-	if (!fp)
-		return 0;
-
-	if (byteCnt) {
-		*byteCnt = 0;
-	}
+int ReadVariableLengthNumber(std::ifstream &ifs, int *byteCnt) {
+	if (!ifs) return 0;
+	if (byteCnt) *byteCnt = 0;
 
 	int n = 0;
 	while (true) {
-		unsigned char tmp = 0;
-		fread(&tmp, 1, 1, fp);
-		int tmp2 = (int)tmp;
+		char tmp = 0;
 
-		if (byteCnt) {
-			(*byteCnt)++;
-		}
+		ifs.read(&tmp, 1);
+		if (byteCnt) (*byteCnt)++;
+
+		int tmp2 = (int)tmp;
 
 		n <<= 7;
 		n |= (tmp2&0b01111111);
@@ -55,8 +50,8 @@ int ReadVariableLengthNumber(FILE *fp, int *byteCnt) {
 }
 
 
-// ビッグエンディアン形式で格納されたbyte(unsigned char)型文字列をint型に変換
-int ConvertBYTEtoINT(unsigned char *str, int elementOffset, int elementCnt) {
+// ビッグエンディアン形式で格納されたchar型文字列をint型に変換
+int ConvertCHARtoINT(const char *str, int elementOffset, int elementCnt) {
 	int i, j;
 	int n = 0;
 

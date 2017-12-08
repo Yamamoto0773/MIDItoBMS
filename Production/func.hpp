@@ -2,6 +2,10 @@
 
 #include <vector>
 #include <stdio.h>
+#include <fstream>
+#include <string>
+#include <cmath>
+#include <iomanip>
 
 #define MAXNOTELAME (36*36-36)
 #define MAXNOTETYPE (36*36)
@@ -63,12 +67,12 @@ int CalcGCD(int a, int b);
 
 // 可変長数値をファイルから取得
 // 戻り値は固定長数値
-int ReadVariableLengthNumber(FILE *fp, int *byteCnt=NULL);
+int ReadVariableLengthNumber(std::ifstream &ifs, int *byteCnt=NULL);
 
 
 
-// ビッグエンディアン形式で格納されたbyte(unsigned char)型文字列をint型に変換
-int ConvertBYTEtoINT(unsigned char *str, int elementOffset, int elementCnt);
+// ビッグエンディアン形式で格納されたchar型文字列をint型に変換
+int ConvertCHARtoINT(const char *str, int elementOffset, int elementCnt);
 
 // int型をビッグエンディアン形式でbyte(unsigned char)型文字列に変換
 // 戻り値は変換したbyte数
