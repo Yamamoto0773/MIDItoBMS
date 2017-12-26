@@ -174,7 +174,9 @@ int main(void) {
 		bool loopFlag = true;
 		while (loopFlag) {		// 1トラック解析ループ
 
-			buffer.erase(buffer.begin(), buffer.begin()+buffer.length());
+			for (int i=0; i<sizeof(buffer)/sizeof(buffer[0]); i++) {
+				buffer[i] = '\0';
+			}
 			int bufferByte = 0;
 			int eventKind = 0;
 
@@ -365,15 +367,14 @@ int main(void) {
 				bufferByte++;
 				ifMidi.read(&buffer[0], eventLen);
 				bufferByte+=eventLen;
-
+				
 				int musec;
 				switch (eventType) {
 					case 0x03:	// トラック名
 						trackName.clear();
-						for (int i=0; i<buffer[i] != '\0'; i++) {
+						for (int i=0; buffer[i]!='\0'; i++) {
 							trackName += buffer[i];
 						}
-						trackName += '\0';
 						break;
 					case 0x2f:	// トラック終端
 						loopFlag = false;
@@ -485,7 +486,7 @@ int main(void) {
 					ofBms << "00";					
 					writeByte++;
 				}
-				ofBms << endl;
+				ofBms << "\n";
 
 				startNum[i] = end;
 			}
@@ -503,9 +504,9 @@ int main(void) {
 	printf("all NOTE cnt	%4d\n", noteCnt);
 	printf("HOLD NOTE cnt	%4d\n\n", holdCnt);
 	puts("*BEAT");
-	ofBms << endl;
-	ofBms << "#DIFINESTART HEADER" << endl;
-	ofBms << "//BEAT" << endl;
+	ofBms << "\n";
+	ofBms << "#DIFINESTART HEADER" << "\n";
+	ofBms << "//BEAT" << "\n";
 	for (int i=0; i<beatMem.size(); i++) {
 		printf("BAR:%03d-  beat:%d/%d\n", beatMem[i].bar, beatMem[i].CONTENT.BEAT.numer, beatMem[i].CONTENT.BEAT.denom);
 	}
@@ -516,25 +517,25 @@ int main(void) {
 			beatTmp = (float)beatMem[cnt].CONTENT.BEAT.numer/beatMem[cnt].CONTENT.BEAT.denom;
 			cnt++;
 		}
-		ofBms << "#" << setfill('0') << setw(3) << i << "02:" << beatTmp << endl; 
+		ofBms << "#" << setfill('0') << setw(3) << i << "02:" << beatTmp << "\n"; 
 	}
 	printf("\n*TEMPO\n");
-	ofBms << endl;
-	ofBms << "//TEMPO" << endl;
-	ofBms << "#BPM " << tempoMem[0].CONTENT.TEMPO.tempo << endl;
+	ofBms << "\n";
+	ofBms << "//TEMPO" << "\n";
+	ofBms << "#BPM " << tempoMem[0].CONTENT.TEMPO.tempo << "\n";
 	printf("BAR:%03d-  bpm:%f\n", tempoMem[0].bar, tempoMem[0].CONTENT.TEMPO.tempo);
 	for (int i=1; i<tempoMem.size(); i++) {
 		printf("BAR:%03d-  bpm:%f\n", tempoMem[i].bar, tempoMem[i].CONTENT.TEMPO.tempo);
 		ConvertINTtoSTR36(i, str36);
-		ofBms << "#BPM" << str36 << " " << tempoMem[i].CONTENT.TEMPO.tempo << endl;
+		ofBms << "#BPM" << str36 << " " << tempoMem[i].CONTENT.TEMPO.tempo << "\n";
 	}
-	ofBms << endl;
+	ofBms << "\n";
 	for (int i=1; i<tempoMem.size(); i++) {
 		ConvertINTtoSTR36(i, str36);
-		ofBms << "#" << setfill('0') << setw(3) << tempoMem[i].bar << "08:" << str36 << endl;
+		ofBms << "#" << setfill('0') << setw(3) << tempoMem[i].bar << "08:" << str36 << "\n";
 	}
 	ofBms << "#DEFINEEND HEADER\n";
-	ofBms << endl;
+	ofBms << "\n";
 	ofBms << "//NOTELANE\n";
 	printf("\nNOTE LANE	%4d kind[s]\n", laneTypeMem.size());
 	for (int i=0; i<laneTypeMem.size(); i++) {
@@ -542,15 +543,15 @@ int main(void) {
 		if (laneDivideFlag) {
 			GetInterval(laneTypeMem[i].interval, intvl);
 			ofBms << "#LANENAME" << str36 << ":TRACK " << laneTypeMem[i].trackNum << " "
-				<< laneTypeMem[i].instName << "  INTERVAL:" << intvl << endl;
+				<< laneTypeMem[i].instName << "  INTERVAL:" << intvl << "\n";
 		}
 		else {
 			ofBms << "#LANENAME" << str36 << ":TRACK " << laneTypeMem[i].trackNum << " "
-				<< laneTypeMem[i].instName << endl;
+				<< laneTypeMem[i].instName << "\n";
 		}
 		ofBms << "#LANEPOS" << str36 << ":\n";
 	}
-	ofBms << endl;
+	ofBms << "\n";
 	ofBms << "//WAV\n";
 	printf("NOTE SOUND	%4d kind[s]\n", noteSoundMem.size());
 	for (int i=0; i<noteSoundMem.size(); i++) {
@@ -566,21 +567,25 @@ int main(void) {
 				<< " len:" << noteSoundMem[i].barLen.numer << "/" << noteSoundMem[i].barLen.denom << " bar\n";
 		}
 	}
-	ofBms << endl;
+	ofBms << "\n";
 	ofBms << "//BACK MUSIC\n";
 	ConvertINTtoSTR36(MAXNOTESOUND-1, str36);
 	ofBms << "#WAV" << str36 << " back music\n";
-	ofBms << "#00101:" << str36 << endl;
-	ofBms << endl;
+	ofBms << "#00101:" << str36 << "\n";
+	ofBms << "\n";
 	ofBms << "//NOTESOUND & NOTEVOL\n";
 	printf("NOTE TYPE	%4d kind[s]\n", noteTypeMem.size()-1);
 	char str36a[3];
 	for (int i=1; i<noteTypeMem.size(); i++) {
 		ConvertINTtoSTR36(i, str36);
 		ConvertINTtoSTR36(noteTypeMem[i].soundNum, str36a);
-		ofBms << "#NOTESOUND" << str36 << " " << str36a << endl;
-		ofBms << "#NOTEVOL" << str36 << " " << sqrtf((float)noteTypeMem[i].velocity/0x7f);
+		ofBms << "#NOTESOUND" << str36 << " " << str36a << "\n";
+		ofBms << "#NOTEVOL" << str36 << " " << fixed << sqrtf((float)noteTypeMem[i].velocity/0x7f) << "\n";
 	}
+
+	
+	printf("キーを押すと終了します...");
+	while (getchar() != '\n');
 
 
 	return 0;
